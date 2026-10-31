@@ -207,7 +207,7 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
 
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`${fieldId}-hotel`} className="text-xs">
-                  {t.hotel}
+                  {t.hotelOptional}
                 </Label>
                 <Select
                   items={hotelItems}
@@ -225,6 +225,9 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                     ))}
                   </SelectContent>
                 </Select>
+                {stay.hotelId === 'none' && (
+                  <p className="text-[11px] text-muted-foreground">{t.hotelOptionalHint}</p>
+                )}
               </div>
 
               <div className="flex flex-col gap-1.5">

@@ -6,9 +6,7 @@ import { StatCard } from '@/components/stat-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatEUR, formatMonth, roomNights, totalRooms } from '@/lib/format'
-import { useApp } from '@/lib/store'
-
-const RATES = [2, 2.5, 3, 3.5, 4, 4.5, 5]
+import { FEE_RATES, useApp } from '@/lib/store'
 
 interface Aggregate {
   bookings: number
@@ -28,20 +26,21 @@ function Bar({ value, max }: { value: number; max: number }) {
 }
 
 export function BillingTab() {
-  const { t, lang, reservations, agencies, agencyName, agencyRates, setAgencyRate } = useApp()
+  const { t, lang, reservations, hotels, feeFor, setHotelFeeRate } = useApp()
 
-  const { byAgency, monthRows, totals } = useMemo(() => {
-    const byAgency = new Map<string, Aggregate>(agencies.map((a) => [a.id, empty()]))
+  const { byHotel, monthRows, totals } = useMemo(() => {
+    const byHotel = new Map<string, Aggregate>()
     const byMonth = new Map<string, Aggregate>()
     const totals = empty()
     for (const r of reservations) {
       if (r.status !== 'confirmed') continue
       const rn = roomNights(r)
-      const fee = rn * (agencyRates[r.agencyId] ?? 3)
+      const fee = feeFor(r)
       const month = r.checkIn.slice(0, 7)
-      if (!byAgency.has(r.agencyId)) byAgency.set(r.agencyId, empty())
+      const hotelKey = r.hotelId ?? ''
+      if (!byHotel.has(hotelKey)) byHotel.set(hotelKey, empty())
       if (!byMonth.has(month)) byMonth.set(month, empty())
-      for (const agg of [byAgency.get(r.agencyId)!, byMonth.get(month)!, totals]) {
+      for (const agg of [byHotel.get(hotelKey)!, byMonth.get(month)!, totals]) {
         agg.bookings += 1
         agg.rooms += totalRooms(r.rooms)
         agg.roomNights += rn
@@ -49,10 +48,14 @@ export function BillingTab() {
       }
     }
     const monthRows = Array.from(byMonth.entries()).sort(([a], [b]) => b.localeCompare(a))
-    return { byAgency, monthRows, totals }
-  }, [reservations, agencies, agencyRates])
+    return { byHotel, monthRows, totals }
+  }, [reservations, feeFor])
 
-  const maxAgencyFee = Math.max(0, ...Array.from(byAgency.values()).map((a) => a.fee))
+  const hotelRows = [...hotels].sort(
+    (a, b) => (byHotel.get(b.id)?.fee ?? 0) - (byHotel.get(a.id)?.fee ?? 0) || a.nameEs.localeCompare(b.nameEs),
+  )
+  const rateItems = FEE_RATES.map((r) => ({ value: String(r), label: formatEUR(r, lang) }))
+  const maxHotelFee = Math.max(0, ...Array.from(byHotel.values()).map((a) => a.fee))
   const maxMonthFee = Math.max(0, ...monthRows.map(([, a]) => a.fee))
 
   return (
@@ -76,14 +79,14 @@ export function BillingTab() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section className="rounded-xl border bg-card shadow-xs" aria-labelledby="by-agency">
-          <h2 id="by-agency" className="border-b px-4 py-3 text-sm font-semibold">
-            {t.byAgency}
+        <section className="rounded-xl border bg-card shadow-xs" aria-labelledby="by-hotel">
+          <h2 id="by-hotel" className="border-b px-4 py-3 text-sm font-semibold">
+            {t.byHotel}
           </h2>
           <Table className="min-w-[560px]">
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="pl-4">{t.colAgency}</TableHead>
+                <TableHead className="pl-4">{t.hotelNameEs}</TableHead>
                 <TableHead className="text-right">{t.bookings}</TableHead>
                 <TableHead className="text-right">{t.roomNights}</TableHead>
                 <TableHead>{t.rate}</TableHead>
@@ -91,29 +94,27 @@ export function BillingTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {agencies.map((a) => {
-                const agg = byAgency.get(a.id) ?? empty()
-                const rate = agencyRates[a.id] ?? 3
-                const items = RATES.map((r) => ({ value: String(r), label: formatEUR(r, lang) }))
+              {hotelRows.map((h) => {
+                const agg = byHotel.get(h.id) ?? empty()
                 return (
-                  <TableRow key={a.id}>
+                  <TableRow key={h.id}>
                     <TableCell className="pl-4">
-                      <p className="text-sm font-medium">{agencyName(a.id)}</p>
-                      <Bar value={agg.fee} max={maxAgencyFee} />
+                      <p className="text-sm font-medium">{h.nameEs}</p>
+                      <Bar value={agg.fee} max={maxHotelFee} />
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs tabular-nums">{agg.bookings}</TableCell>
                     <TableCell className="text-right font-mono text-xs tabular-nums">{agg.roomNights}</TableCell>
                     <TableCell>
                       <Select
-                        items={items}
-                        value={String(rate)}
-                        onValueChange={(v) => v && setAgencyRate(a.id, Number(v))}
+                        items={rateItems}
+                        value={String(h.feeRate)}
+                        onValueChange={(v) => v && setHotelFeeRate(h.id, Number(v))}
                       >
-                        <SelectTrigger size="sm" className="w-24 font-mono" aria-label={`${t.rate} – ${agencyName(a.id)}`}>
+                        <SelectTrigger size="sm" className="w-24 font-mono" aria-label={`${t.rate} – ${h.nameEs}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {items.map((item) => (
+                          {rateItems.map((item) => (
                             <SelectItem key={item.value} value={item.value}>
                               {item.label}
                             </SelectItem>

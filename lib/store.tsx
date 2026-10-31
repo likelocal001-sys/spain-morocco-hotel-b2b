@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { roomNights } from './format'
 import { dictionaries, type Dict } from './i18n'
 import { AGENCIES, CURRENT_AGENCY_ID, SEED_HOTELS, createSeedReservations } from './seed-data'
 import type { Agency, Hotel, Lang, Reservation, Role } from './types'
@@ -19,12 +20,16 @@ interface AppContextValue {
   reservations: Reservation[]
   hotels: Hotel[]
   hotelById: (id?: string) => Hotel | undefined
-  agencyRates: Record<string, number>
+  feeRateFor: (reservation: Reservation) => number
+  feeFor: (reservation: Reservation) => number
   addReservation: (input: NewReservationInput) => Reservation
   updateReservation: (id: string, patch: Partial<Reservation>) => void
   saveHotel: (hotel: Hotel) => void
-  setAgencyRate: (agencyId: string, rate: number) => void
+  setHotelFeeRate: (hotelId: string, rate: number) => void
 }
+
+export const DEFAULT_FEE_RATE = 3
+export const FEE_RATES = [2, 2.5, 3, 3.5, 4, 4.5, 5]
 
 const AppContext = createContext<AppContextValue | null>(null)
 
@@ -34,11 +39,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role>('client')
   const [reservations, setReservations] = useState<Reservation[]>(() => createSeedReservations())
   const [hotels, setHotels] = useState<Hotel[]>(SEED_HOTELS)
-  const [agencyRates, setAgencyRates] = useState<Record<string, number>>({
-    'seoul-tours': 3,
-    'hangang-travel': 4,
-    'bluesky-tour': 3,
-  })
 
   useEffect(() => {
     document.documentElement.lang = lang
@@ -54,6 +54,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   )
 
   const hotelById = useCallback((id?: string) => hotels.find((h) => h.id === id), [hotels])
+
+  const feeRateFor = useCallback(
+    (reservation: Reservation) => hotelById(reservation.hotelId)?.feeRate ?? DEFAULT_FEE_RATE,
+    [hotelById],
+  )
+
+  const feeFor = useCallback((reservation: Reservation) => roomNights(reservation) * feeRateFor(reservation), [feeRateFor])
 
   const addReservation = useCallback((input: NewReservationInput) => {
     const now = new Date()
@@ -81,8 +88,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     )
   }, [])
 
-  const setAgencyRate = useCallback((agencyId: string, rate: number) => {
-    setAgencyRates((prev) => ({ ...prev, [agencyId]: rate }))
+  const setHotelFeeRate = useCallback((hotelId: string, rate: number) => {
+    setHotels((prev) => prev.map((h) => (h.id === hotelId ? { ...h, feeRate: rate } : h)))
   }, [])
 
   const value = useMemo<AppContextValue>(
@@ -98,13 +105,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       reservations,
       hotels,
       hotelById,
-      agencyRates,
+      feeRateFor,
+      feeFor,
       addReservation,
       updateReservation,
       saveHotel,
-      setAgencyRate,
+      setHotelFeeRate,
     }),
-    [lang, role, agencyName, reservations, hotels, hotelById, agencyRates, addReservation, updateReservation, saveHotel, setAgencyRate],
+    [
+      lang,
+      role,
+      agencyName,
+      reservations,
+      hotels,
+      hotelById,
+      feeRateFor,
+      feeFor,
+      addReservation,
+      updateReservation,
+      saveHotel,
+      setHotelFeeRate,
+    ],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

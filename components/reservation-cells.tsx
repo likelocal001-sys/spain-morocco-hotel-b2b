@@ -102,9 +102,7 @@ export function HotelCell({ reservation }: { reservation: Reservation }) {
       <span className="text-xs font-medium">{CITY_LABELS[reservation.city][lang]}</span>
       <span className="max-w-[180px] truncate text-[11px] text-muted-foreground">
         {hotel
-          ? lang === 'ko'
-            ? hotel.nameKo
-            : hotel.nameEs
+          ? hotel.nameEs
           : `${t.unassigned}${reservation.preferredStars ? ` · ${reservation.preferredStars}★` : ''}`}
       </span>
     </div>

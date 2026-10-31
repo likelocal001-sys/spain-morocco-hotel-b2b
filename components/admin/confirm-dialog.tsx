@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { addDays, formatFileSize, roomNights } from '@/lib/format'
+import { addDays, formatEUR, formatFileSize, roomNights } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import type { AttachedFile, Reservation } from '@/lib/types'
 
@@ -21,7 +21,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
   const [error, setError] = useState<string | null>(null)
 
   const cityHotels = hotels.filter((h) => h.city === reservation.city)
-  const hotelItems = cityHotels.map((h) => ({ value: h.id, label: `${lang === 'ko' ? h.nameKo : h.nameEs} · ${h.stars}★` }))
+  const hotelItems = cityHotels.map((h) => ({ value: h.id, label: `${h.nameEs} · ${h.stars}★ · ${formatEUR(h.feeRate, lang)}/RN` }))
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault()

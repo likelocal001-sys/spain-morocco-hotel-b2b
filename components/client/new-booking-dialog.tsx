@@ -108,7 +108,7 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
 
   const hotelItems = [
     { value: 'none', label: t.hotelNone },
-    ...cityHotels.map((h) => ({ value: h.id, label: `${lang === 'ko' ? h.nameKo : h.nameEs} · ${h.stars}★` })),
+    ...cityHotels.map((h) => ({ value: h.id, label: `${h.nameEs} · ${h.stars}★` })),
   ]
 
   function handleFile(file: File | undefined) {

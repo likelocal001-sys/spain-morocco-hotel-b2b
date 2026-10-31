@@ -56,7 +56,8 @@ export function SpanishEmailDialog({ reservation, onClose }: { reservation: Rese
   const hotel = hotelById(reservation.hotelId)
   const [email, setEmail] = useState(() => buildSpanishEmail(reservation, hotel))
 
-  const mailto = `mailto:${hotel?.salesEmail ?? ''}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
+  const recipients = (hotel?.contacts ?? []).map((c) => c.email).filter(Boolean)
+  const mailto = `mailto:${recipients.join(',')}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
 
   async function copy() {
     await navigator.clipboard.writeText(`${email.subject}\n\n${email.body}`)
@@ -75,7 +76,7 @@ export function SpanishEmailDialog({ reservation, onClose }: { reservation: Rese
             Para
           </Label>
           <p id="email-to" className="font-mono text-sm">
-            {hotel?.salesEmail ?? '—'}
+            {recipients.length ? recipients.join(', ') : '—'}
           </p>
         </div>
         <div className="flex flex-col gap-1.5">

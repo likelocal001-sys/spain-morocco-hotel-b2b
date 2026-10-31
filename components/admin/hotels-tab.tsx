@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { formatEUR } from '@/lib/format'
 import { CITIES, CITY_LABELS } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -24,7 +25,7 @@ export function HotelsTab() {
     const q = query.trim().toLowerCase()
     return (
       (city === 'all' || h.city === city) &&
-      (!q || h.nameEs.toLowerCase().includes(q) || h.nameKo.includes(q))
+      (!q || h.nameEs.toLowerCase().includes(q))
     )
   })
 
@@ -70,7 +71,8 @@ export function HotelsTab() {
             <TableHead className="pl-4">{t.hotelNameEs}</TableHead>
             <TableHead>{t.city}</TableHead>
             <TableHead>{t.grade}</TableHead>
-            <TableHead>{t.contact}</TableHead>
+            <TableHead>{t.contacts}</TableHead>
+            <TableHead>{t.feeRateLabel}</TableHead>
             <TableHead>{t.busParking}</TableHead>
             <TableHead>{t.priceNotes}</TableHead>
             <TableHead className="pr-4 text-right">
@@ -83,7 +85,6 @@ export function HotelsTab() {
             <TableRow key={h.id}>
               <TableCell className="pl-4">
                 <p className="text-sm font-medium">{h.nameEs}</p>
-                <p className="text-xs text-muted-foreground">{h.nameKo}</p>
               </TableCell>
               <TableCell className="text-xs">{CITY_LABELS[h.city][lang]}</TableCell>
               <TableCell>
@@ -93,18 +94,33 @@ export function HotelsTab() {
                 </span>
               </TableCell>
               <TableCell>
-                <a href={`mailto:${h.salesEmail}`} className="flex items-center gap-1 text-xs text-primary hover:underline">
-                  <Mail className="size-3" aria-hidden="true" />
-                  {h.salesEmail}
-                </a>
-                <a
-                  href={`tel:${h.salesPhone.replace(/\s/g, '')}`}
-                  className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-foreground"
-                >
-                  <Phone className="size-3" aria-hidden="true" />
-                  {h.salesPhone}
-                </a>
+                <ul className="flex flex-col gap-1.5">
+                  {h.contacts.map((c) => (
+                    <li key={c.id}>
+                      {c.name && <p className="text-xs font-medium">{c.name}</p>}
+                      {c.email && (
+                        <a
+                          href={`mailto:${c.email}`}
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <Mail className="size-3" aria-hidden="true" />
+                          {c.email}
+                        </a>
+                      )}
+                      {c.phone && (
+                        <a
+                          href={`tel:${c.phone.replace(/\s/g, '')}`}
+                          className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground hover:text-foreground"
+                        >
+                          <Phone className="size-3" aria-hidden="true" />
+                          {c.phone}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </TableCell>
+              <TableCell className="font-mono text-xs tabular-nums">{formatEUR(h.feeRate, lang)}</TableCell>
               <TableCell>
                 <span
                   className={cn(

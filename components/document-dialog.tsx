@@ -79,7 +79,7 @@ export function DocumentDialog({
             <DocRow label={t.groupName} value={reservation.groupName} />
             <DocRow
               label={t.hotel}
-              value={hotel ? `${hotel.nameEs} (${hotel.nameKo}) · ${hotel.stars}★` : t.unassigned}
+              value={hotel ? `${hotel.nameEs} · ${hotel.stars}★` : t.unassigned}
             />
             <DocRow label={t.city} value={CITY_LABELS[reservation.city][lang]} />
             <DocRow

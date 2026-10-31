@@ -10,8 +10,7 @@ import { formatEUR, formatMonth, formatShortDate, roomNights } from '@/lib/forma
 import { useApp } from '@/lib/store'
 
 export function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { t, lang, reservations, currentAgencyId, agencyRates, agencyName } = useApp()
-  const rate = agencyRates[currentAgencyId] ?? 3
+  const { t, lang, reservations, currentAgencyId, feeFor, agencyName } = useApp()
 
   const confirmed = useMemo(
     () => reservations.filter((r) => r.agencyId === currentAgencyId && r.status === 'confirmed'),
@@ -26,7 +25,7 @@ export function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const lines = confirmed.filter((r) => r.checkIn.slice(0, 7) === selectedMonth)
 
   const hotelTotal = lines.reduce((sum, r) => sum + (r.finalAmount ?? 0), 0)
-  const feeTotal = lines.reduce((sum, r) => sum + roomNights(r) * rate, 0)
+  const feeTotal = lines.reduce((sum, r) => sum + feeFor(r), 0)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,7 +88,7 @@ export function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                       {formatEUR(r.finalAmount, lang)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs tabular-nums">
-                      {formatEUR(roomNights(r) * rate, lang)}
+                      {formatEUR(feeFor(r), lang)}
                     </TableCell>
                   </TableRow>
                 ))}

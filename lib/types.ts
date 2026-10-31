@@ -44,14 +44,20 @@ export interface Reservation {
   createdAt: string
 }
 
+export interface HotelContact {
+  id: string
+  name: string
+  email: string
+  phone: string
+}
+
 export interface Hotel {
   id: string
   nameEs: string
-  nameKo: string
   city: City
   stars: number
-  salesEmail: string
-  salesPhone: string
+  contacts: HotelContact[]
+  feeRate: number
   busParking: boolean
   notes: string
 }

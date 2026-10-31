@@ -4,8 +4,9 @@ import { Download, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cityLabel, REQUEST_TAG_LABELS } from '@/lib/i18n'
-import { formatDate, formatEUR, getStays, nightsBetween, toISODate, totalRooms } from '@/lib/format'
+import { formatDate, formatEUR, getStays, nightsBetween, stayPayments, toISODate, totalRooms } from '@/lib/format'
 import { useApp } from '@/lib/store'
+import { cn } from '@/lib/utils'
 import type { Reservation } from '@/lib/types'
 
 export type DocumentKind = 'voucher' | 'payment'
@@ -43,6 +44,75 @@ export function PrintButton() {
       <Printer aria-hidden="true" />
       {t.print}
     </Button>
+  )
+}
+
+function HotelPaymentList({ reservation }: { reservation: Reservation }) {
+  const { t, lang, hotelById } = useApp()
+  const payments = stayPayments(reservation)
+  const total = payments.reduce((sum, p) => sum + (p.amount ?? 0), 0)
+
+  return (
+    <section className="mt-4 flex flex-col gap-2.5" aria-label={t.stayPayments}>
+      <h3 className="text-sm font-semibold">{t.stayPayments}</h3>
+      <ol className="flex flex-col gap-2.5">
+        {payments.map((p, index) => {
+          const hotel = hotelById(p.stay.hotelId)
+          const bank = hotel?.bank
+          return (
+            <li key={p.stay.id} className="rounded-lg border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dashed pb-2">
+                <span className="text-sm font-semibold">
+                  <span className="font-mono text-muted-foreground">{index + 1}. </span>
+                  {cityLabel(p.stay.city, lang)} · {hotel?.nameEs ?? t.unassigned}
+                </span>
+                {p.paid && (
+                  <span className="rounded bg-success/10 px-1.5 py-0.5 text-[11px] font-semibold text-success">{t.paid}</span>
+                )}
+              </div>
+              <dl>
+                <DocRow
+                  label={t.amountDue}
+                  value={<span className="font-mono text-base font-bold text-primary">{formatEUR(p.amount, lang)}</span>}
+                />
+                <DocRow
+                  label={t.payBefore}
+                  value={
+                    <span className={cn('font-mono font-bold', !p.paid && 'text-destructive')}>
+                      {formatDate(p.limit, lang)}
+                    </span>
+                  }
+                />
+                <DocRow
+                  label={t.bankInfo}
+                  value={
+                    bank?.iban ? (
+                      <span className="flex flex-col gap-0.5 text-xs">
+                        <span>
+                          {bank.bankName} · {bank.holder}
+                        </span>
+                        <span className="font-mono text-sm tracking-wide">{bank.iban}</span>
+                        {bank.bic && <span className="font-mono text-muted-foreground">BIC {bank.bic}</span>}
+                      </span>
+                    ) : (
+                      <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-semibold text-destructive">
+                        {t.bankMissing}
+                      </span>
+                    )
+                  }
+                />
+              </dl>
+            </li>
+          )
+        })}
+      </ol>
+      {payments.length > 1 && (
+        <div className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2 text-sm">
+          <span className="font-medium">{t.totalAmount}</span>
+          <span className="font-mono text-lg font-bold text-primary">{formatEUR(total, lang)}</span>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -115,20 +185,8 @@ export function DocumentDialog({
                   .join(', ')}
               />
             )}
-            {kind === 'payment' && (
-              <>
-                <DocRow
-                  label={t.amountDue}
-                  value={<span className="text-lg font-bold text-primary">{formatEUR(reservation.finalAmount, lang)}</span>}
-                />
-                <DocRow
-                  label={t.payBefore}
-                  value={<span className="font-mono font-bold text-destructive">{formatDate(reservation.paymentLimit, lang)}</span>}
-                />
-                <DocRow label={t.bankInfo} value={<span className="font-mono text-xs">ES91 2100 0418 4502 0005 1332 · CAIXESBBXXX</span>} />
-              </>
-            )}
           </dl>
+          {kind === 'payment' && <HotelPaymentList reservation={reservation} />}
           <p className="mt-4 rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
             {kind === 'voucher' ? t.voucherNote : t.paymentWarning}
           </p>

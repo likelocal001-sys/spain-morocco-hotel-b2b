@@ -22,6 +22,9 @@ export interface StayNegotiation {
   rate?: number
   rates?: Partial<Record<RoomType, number>>
   note?: string
+  amount?: number
+  paymentLimit?: string
+  paid?: boolean
 }
 
 export type RoomType = 'single' | 'twin' | 'triple'
@@ -102,6 +105,13 @@ export interface HotelContact {
   phone: string
 }
 
+export interface HotelBank {
+  bankName: string
+  holder: string
+  iban: string
+  bic: string
+}
+
 export interface Hotel {
   id: string
   nameEs: string
@@ -111,6 +121,8 @@ export interface Hotel {
   feeRate: number
   busParking: boolean
   notes: string
+  bank?: HotelBank
+  paymentDaysBefore?: number
 }
 
 export interface Agency {

@@ -3,7 +3,15 @@
 import { RequestTagChips } from '@/components/stay-request-tags'
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { cityLabel } from '@/lib/i18n'
-import { formatDate, formatShortDate, getDeadline, getStays, nightsBetween, totalRooms } from '@/lib/format'
+import {
+  type DeadlineLevel,
+  formatDate,
+  formatShortDate,
+  getDeadline,
+  getStays,
+  nightsBetween,
+  totalRooms,
+} from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
@@ -34,9 +42,12 @@ export function StatusBadge({ status }: { status: ReservationStatus }) {
 }
 
 export function DeadlineBadge({ reservation }: { reservation: Reservation }) {
-  const { t } = useApp()
   const { level, days } = getDeadline(reservation)
+  return <DeadlineChip level={level} days={days} />
+}
 
+export function DeadlineChip({ level, days }: { level: DeadlineLevel; days?: number }) {
+  const { t } = useApp()
   if (level === 'none') return null
   if (level === 'paid') {
     return (
@@ -68,14 +79,24 @@ export function DeadlineBadge({ reservation }: { reservation: Reservation }) {
 }
 
 export function DeadlineCell({ reservation }: { reservation: Reservation }) {
-  const { t, lang } = useApp()
-  if (reservation.status !== 'confirmed' || !reservation.paymentLimit) {
+  const { t, lang, hotelById } = useApp()
+  const deadline = getDeadline(reservation)
+  if (deadline.level === 'none' || !deadline.limit) {
     return <span className="text-xs text-muted-foreground">{reservation.status === 'cancelled' ? '—' : t.undecided}</span>
   }
+  const nextHotel = deadline.next && hotelById(deadline.next.stay.hotelId)
   return (
     <div className="flex flex-col items-start gap-1">
-      <span className="font-mono text-xs tabular-nums">{formatDate(reservation.paymentLimit, lang)}</span>
-      <DeadlineBadge reservation={reservation} />
+      <span className="font-mono text-xs tabular-nums">{formatDate(deadline.limit, lang)}</span>
+      <DeadlineChip level={deadline.level} days={deadline.days} />
+      {deadline.total > 1 && deadline.unpaid > 0 && (
+        <span className="max-w-[150px] truncate text-[11px] text-muted-foreground">
+          {nextHotel ? nextHotel.nameEs : deadline.next && cityLabel(deadline.next.stay.city, lang)} ·{' '}
+          <span className="font-medium text-foreground">
+            {t.unpaidHotels} {deadline.unpaid}/{deadline.total}
+          </span>
+        </span>
+      )}
     </div>
   )
 }

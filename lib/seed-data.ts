@@ -1,5 +1,5 @@
 import { addDays } from './format'
-import type { Agency, Hotel, Reservation } from './types'
+import type { Agency, Hotel, NegotiationStep, Reservation } from './types'
 
 export const CURRENT_AGENCY_ID = 'seoul-tours'
 
@@ -9,7 +9,23 @@ export const AGENCIES: Agency[] = [
   { id: 'bluesky-tour', nameKo: '블루스카이투어', nameEs: 'Blue Sky Tour' },
 ]
 
-export const SEED_HOTELS: Hotel[] = [
+const SEED_PAYMENT: Record<string, Pick<Hotel, 'bank' | 'paymentDaysBefore'>> = {
+  'h-1': { paymentDaysBefore: 14, bank: { bankName: 'CaixaBank', holder: 'Gran Vía Centro S.L.', iban: 'ES76 2100 0418 4502 0005 1332', bic: 'CAIXESBBXXX' } },
+  'h-2': { paymentDaysBefore: 30, bank: { bankName: 'BBVA', holder: 'Castellana Park Hoteles S.A.', iban: 'ES12 0182 2370 4100 0159 8842', bic: 'BBVAESMMXXX' } },
+  'h-3': { paymentDaysBefore: 21, bank: { bankName: 'Banco Sabadell', holder: 'Diagonal Mar Plaza S.L.', iban: 'ES44 0081 0200 2500 0123 4567', bic: 'BSABESBBXXX' } },
+  'h-4': { paymentDaysBefore: 7 },
+  'h-5': { paymentDaysBefore: 14, bank: { bankName: 'Banco Santander', holder: 'Giralda Sevilla Hotel S.L.', iban: 'ES98 0049 1500 0512 3456 7891', bic: 'BSCHESMMXXX' } },
+  'h-6': { paymentDaysBefore: 10, bank: { bankName: 'Unicaja', holder: 'Alhambra Mirador S.L.', iban: 'ES55 2103 1020 4100 3001 2345', bic: 'UCJAES2MXXX' } },
+  'h-7': { paymentDaysBefore: 14, bank: { bankName: 'CaixaBank', holder: 'Turia Artes Hotel S.L.', iban: 'ES21 2100 1234 5602 0011 7788', bic: 'CAIXESBBXXX' } },
+  'h-8': { paymentDaysBefore: 7, bank: { bankName: 'Globalcaja', holder: 'Puerta de Bisagra S.L.', iban: 'ES30 3190 0001 8100 2233 4455', bic: 'BCOEESMM190' } },
+  'h-9': { paymentDaysBefore: 14, bank: { bankName: 'Unicaja', holder: 'Málaga Puerto Centro S.L.', iban: 'ES67 2103 0146 9300 1122 3344', bic: 'UCJAES2MXXX' } },
+  'h-10': { paymentDaysBefore: 14, bank: { bankName: 'Ibercaja', holder: 'Pilar Plaza Hotel S.L.', iban: 'ES80 2085 5200 8103 3000 5566', bic: 'CAZRES2ZXXX' } },
+  'h-11': { paymentDaysBefore: 21, bank: { bankName: 'Millennium BCP', holder: 'Liberdade Hotéis Lda.', iban: 'PT50 0033 0000 4523 1234 5670 5', bic: 'BCOMPTPLXXX' } },
+  'h-12': { paymentDaysBefore: 10, bank: { bankName: 'Caixa Geral de Depósitos', holder: 'Santuário Hotelaria Lda.', iban: 'PT50 0035 0123 0001 2345 6789 0', bic: 'CGDIPTPLXXX' } },
+  'h-13': { paymentDaysBefore: 30, bank: { bankName: 'Novo Banco', holder: 'Ribeira Douro Hotéis S.A.', iban: 'PT50 0007 0000 0012 3456 7892 3', bic: 'BESCPTPLXXX' } },
+}
+
+export const SEED_HOTELS: Hotel[] = ([
   {
     id: 'h-1',
     nameEs: 'Hotel Gran Vía Centro',
@@ -169,7 +185,9 @@ export const SEED_HOTELS: Hotel[] = [
     busParking: false,
     notes: '[테스트] 히베이라 강변. 버스는 Praça da Ribeira 하차. 2026.05 Twin €150 BB.',
   },
-]
+] as Hotel[]).map((h) => ({ ...h, ...SEED_PAYMENT[h.id] }))
+
+const ALL_STEPS: NegotiationStep[] = ['quoteRequested', 'quoteReceived', 'counterOffer', 'termsAgreed', 'optionHeld']
 
 export function createSeedReservations(today = new Date()): Reservation[] {
   const d = (n: number) => addDays(today, n)
@@ -202,16 +220,26 @@ export function createSeedReservations(today = new Date()): Reservation[] {
       agencyId: 'seoul-tours',
       groupName: '[스페인 일주 10일] 11월 2차',
       checkIn: d(20),
-      checkOut: d(23),
+      checkOut: d(25),
       city: 'Barcelona',
       hotelId: 'h-3',
+      stays: [
+        { id: 'SPM-2610-017-1', city: 'Barcelona', checkIn: d(20), checkOut: d(23), stars: 4, hotelId: 'h-3', requestTags: ['lateCheckout'] },
+        { id: 'SPM-2610-017-2', city: 'Valencia', checkIn: d(23), checkOut: d(25), stars: 4, hotelId: 'h-7', requestTags: [] },
+        { id: 'SPM-2610-017-3', city: 'Zaragoza', checkIn: d(25), checkOut: d(26), stars: 4, hotelId: 'h-10', requestTags: ['busParking'] },
+      ],
+      negotiation: {
+        'SPM-2610-017-1': { steps: ALL_STEPS, amount: 5_940, paymentLimit: d(-1), paid: true },
+        'SPM-2610-017-2': { steps: ALL_STEPS, amount: 2_850, paymentLimit: d(3) },
+        'SPM-2610-017-3': { steps: ALL_STEPS, amount: 1_320, paymentLimit: d(11) },
+      },
       rooms: { single: 1, twin: 14, triple: 0 },
       breakfast: true,
       roomingList: { name: 'rooming_BCN_1120.pdf', size: 98_200 },
       requestTags: ['lateCheckout'],
       status: 'confirmed',
-      paymentLimit: d(3),
-      finalAmount: 5_940,
+      paymentLimit: d(-1),
+      finalAmount: 10_110,
       createdAt: d(-15),
     },
     {

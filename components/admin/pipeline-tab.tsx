@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
 import { ConfirmDialog } from './confirm-dialog'
 import { NegotiationWorkspace } from './negotiation-workspace'
+import { PaymentStatusDialog } from './payment-status-dialog'
 import { SpanishEmailDialog } from './spanish-email-dialog'
 
 export function PipelineTab() {
@@ -34,6 +35,7 @@ export function PipelineTab() {
   const [confirming, setConfirming] = useState<Reservation | null>(null)
   const [emailing, setEmailing] = useState<Reservation | null>(null)
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
+  const [payingId, setPayingId] = useState<string | null>(null)
 
   const byAgency = useMemo(
     () => reservations.filter((r) => agency === 'all' || r.agencyId === agency),
@@ -225,11 +227,8 @@ export function PipelineTab() {
                           size="xs"
                           variant="outline"
                           className="border-success/40 text-success hover:bg-success/10 hover:text-success"
-                          onClick={() => {
-                            updateReservation(r.id, { paid: true })
-                            toast.success(t.paidToast, { description: r.id })
-                          }}
-                        >
+                      onClick={() => setPayingId(r.id)}
+                    >
                           <CircleDollarSign aria-hidden="true" />
                           {t.markPaid}
                         </Button>
@@ -280,6 +279,7 @@ export function PipelineTab() {
         </Table>
       )}
 
+      {payingId && <PaymentStatusDialog reservationId={payingId} onClose={() => setPayingId(null)} />}
       {workspaceId && (
         <NegotiationWorkspace
           reservationId={workspaceId}

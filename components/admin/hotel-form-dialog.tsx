@@ -10,10 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { formatEUR } from '@/lib/format'
+import { DEFAULT_PAYMENT_DAYS, formatEUR } from '@/lib/format'
 import { CITIES, cityLabel } from '@/lib/i18n'
 import { DEFAULT_FEE_RATE, FEE_RATES, useApp } from '@/lib/store'
-import type { City, Hotel, HotelContact } from '@/lib/types'
+import type { City, Hotel, HotelBank, HotelContact } from '@/lib/types'
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
 
@@ -27,13 +27,37 @@ const emptyHotel = (): Omit<Hotel, 'id'> => ({
   feeRate: DEFAULT_FEE_RATE,
   busParking: true,
   notes: '',
+  bank: emptyBank(),
+  paymentDaysBefore: DEFAULT_PAYMENT_DAYS,
 })
+
+const emptyBank = (): HotelBank => ({ bankName: '', holder: '', iban: '', bic: '' })
+
+function cleanBank(bank: HotelBank | undefined): HotelBank | undefined {
+  if (!bank) return undefined
+  const next = {
+    bankName: bank.bankName.trim(),
+    holder: bank.holder.trim(),
+    iban: bank.iban.trim().toUpperCase(),
+    bic: bank.bic.trim().toUpperCase(),
+  }
+  return Object.values(next).some(Boolean) ? next : undefined
+}
 
 export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClose: () => void }) {
   const { t, lang, saveHotel } = useApp()
   const [form, setForm] = useState<Omit<Hotel, 'id'>>(() =>
-    hotel ? { ...hotel, contacts: hotel.contacts.length ? hotel.contacts : [newContact()] } : emptyHotel(),
+    hotel
+      ? {
+          ...hotel,
+          contacts: hotel.contacts.length ? hotel.contacts : [newContact()],
+          bank: hotel.bank ?? emptyBank(),
+          paymentDaysBefore: hotel.paymentDaysBefore ?? DEFAULT_PAYMENT_DAYS,
+        }
+      : emptyHotel(),
   )
+  const bank = form.bank ?? emptyBank()
+  const setBank = (patch: Partial<HotelBank>) => set('bank', { ...bank, ...patch })
   const [error, setError] = useState<string | null>(null)
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((p) => ({ ...p, [key]: value }))
 
@@ -51,7 +75,14 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
       .filter((c) => c.name || c.email || c.phone)
     if (!form.nameEs.trim() || !contacts.some((c) => c.email)) return setError(t.errHotelName)
     if (contacts.some((c) => c.email && !EMAIL_PATTERN.test(c.email))) return setError(t.errContactEmail)
-    saveHotel({ ...form, nameEs: form.nameEs.trim(), contacts, id: hotel?.id ?? `h-${Date.now()}` })
+    saveHotel({
+      ...form,
+      nameEs: form.nameEs.trim(),
+      contacts,
+      bank: cleanBank(form.bank),
+      paymentDaysBefore: Math.max(0, Math.round(form.paymentDaysBefore ?? DEFAULT_PAYMENT_DAYS)),
+      id: hotel?.id ?? `h-${Date.now()}`,
+    })
     toast.success(t.hotelSaved)
     onClose()
   }
@@ -188,6 +219,76 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
               <Plus aria-hidden="true" />
               {t.addContact}
             </Button>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-3 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-medium">{t.paymentSettings}</legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="h-bank-name" className="text-xs text-muted-foreground">
+                  {t.bankName}
+                </Label>
+                <Input id="h-bank-name" value={bank.bankName} onChange={(e) => setBank({ bankName: e.target.value })} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="h-bank-holder" className="text-xs text-muted-foreground">
+                  {t.accountHolder}
+                </Label>
+                <Input id="h-bank-holder" value={bank.holder} onChange={(e) => setBank({ holder: e.target.value })} />
+              </div>
+              <div className="flex flex-col gap-1 sm:col-span-2 sm:grid sm:grid-cols-[1fr_auto] sm:gap-2">
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="h-bank-iban" className="text-xs text-muted-foreground">
+                    {t.iban}
+                  </Label>
+                  <Input
+                    id="h-bank-iban"
+                    value={bank.iban}
+                    placeholder="ES00 0000 0000 0000 0000 0000"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="font-mono uppercase"
+                    onChange={(e) => setBank({ iban: e.target.value })}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 sm:w-40">
+                  <Label htmlFor="h-bank-bic" className="text-xs text-muted-foreground">
+                    {t.bic}
+                  </Label>
+                  <Input
+                    id="h-bank-bic"
+                    value={bank.bic}
+                    placeholder="XXXXESMMXXX"
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="font-mono uppercase"
+                    onChange={(e) => setBank({ bic: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="h-pay-days" className="text-xs">
+                {t.paymentDaysBefore}
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="h-pay-days"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={120}
+                  value={form.paymentDaysBefore ?? ''}
+                  onChange={(e) => set('paymentDaysBefore', e.target.value === '' ? undefined : Number(e.target.value))}
+                  className="w-24 font-mono"
+                  aria-describedby="h-pay-days-hint"
+                />
+                <span className="text-xs text-muted-foreground">{t.daysBeforeCheckIn}</span>
+              </div>
+              <p id="h-pay-days-hint" className="text-[11px] text-muted-foreground">
+                {t.paymentDaysHint}
+              </p>
+            </div>
           </fieldset>
 
           <div className="flex flex-col gap-1.5">

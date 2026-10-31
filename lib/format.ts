@@ -1,4 +1,4 @@
-import type { BookingSnapshot, Lang, Reservation, RoomCounts, Stay } from './types'
+import type { BookingSnapshot, Lang, Reservation, RoomCounts, Stay, StayNegotiation } from './types'
 
 export function toISODate(date: Date) {
   const y = date.getFullYear()
@@ -132,14 +132,84 @@ export function roomNights(r: Reservation) {
   return getStays(r).reduce((sum, s) => sum + totalRooms(r.rooms) * nightsBetween(s.checkIn, s.checkOut), 0)
 }
 
+export const DEFAULT_PAYMENT_DAYS = 14
+
+export function defaultStayLimit(checkIn: string, daysBefore = DEFAULT_PAYMENT_DAYS, today = new Date()) {
+  const limit = addDays(parseISO(checkIn), -daysBefore)
+  const todayISO = toISODate(today)
+  return limit < todayISO ? todayISO : limit
+}
+
+export interface StayPayment {
+  stay: Stay
+  amount?: number
+  limit?: string
+  paid: boolean
+}
+
+export function stayPayments(r: Reservation): StayPayment[] {
+  const stays = getStays(r)
+  const totalNights = stays.reduce((sum, s) => sum + nightsBetween(s.checkIn, s.checkOut), 0)
+  return stays.map((stay) => {
+    const n = r.negotiation?.[stay.id]
+    const share =
+      r.finalAmount && totalNights
+        ? Math.round(((r.finalAmount * nightsBetween(stay.checkIn, stay.checkOut)) / totalNights) * 100) / 100
+        : undefined
+    const fallback = stays.length === 1 ? r.finalAmount : stayEstimate(r, stay) || share
+    return {
+      stay,
+      amount: n?.amount ?? fallback,
+      limit: n?.paymentLimit ?? r.paymentLimit,
+      paid: n?.paid ?? r.paid,
+    }
+  })
+}
+
+export function paymentPatch(
+  r: Reservation,
+  changes: Record<string, Partial<StayNegotiation>>,
+): Pick<Reservation, 'negotiation' | 'paid'> {
+  const negotiation: Record<string, StayNegotiation> = { ...r.negotiation }
+  for (const p of stayPayments(r)) {
+    const current = negotiation[p.stay.id]
+    negotiation[p.stay.id] = { ...current, steps: current?.steps ?? [], paid: p.paid, ...changes[p.stay.id] }
+  }
+  const paid = getStays(r).every((s) => negotiation[s.id]?.paid)
+  return { negotiation, paid }
+}
+
 export type DeadlineLevel = 'none' | 'paid' | 'ok' | 'warn' | 'critical' | 'expired'
 
-export function getDeadline(r: Reservation): { level: DeadlineLevel; days?: number } {
-  if (r.status !== 'confirmed' || !r.paymentLimit) return { level: 'none' }
-  if (r.paid) return { level: 'paid' }
-  const days = daysUntil(r.paymentLimit)
+export function deadlineLevel(limit: string | undefined, paid: boolean): { level: DeadlineLevel; days?: number } {
+  if (!limit) return { level: 'none' }
+  if (paid) return { level: 'paid' }
+  const days = daysUntil(limit)
   if (days < 0) return { level: 'expired', days }
   if (days <= 1) return { level: 'critical', days }
   if (days <= 3) return { level: 'warn', days }
   return { level: 'ok', days }
+}
+
+export interface DeadlineInfo {
+  level: DeadlineLevel
+  days?: number
+  limit?: string
+  next?: StayPayment
+  unpaid: number
+  total: number
+}
+
+export function getDeadline(r: Reservation): DeadlineInfo {
+  if (r.status !== 'confirmed') return { level: 'none', unpaid: 0, total: 0 }
+  const payments = stayPayments(r)
+  const unpaid = payments.filter((p) => !p.paid)
+  const base = { unpaid: unpaid.length, total: payments.length }
+  if (unpaid.length === 0) {
+    const last = payments.map((p) => p.limit).filter(Boolean).sort().at(-1)
+    return last ? { level: 'paid', limit: last, ...base } : { level: 'none', ...base }
+  }
+  const next = unpaid.filter((p) => p.limit).sort((a, b) => a.limit!.localeCompare(b.limit!))[0]
+  if (!next) return { level: 'none', ...base }
+  return { ...deadlineLevel(next.limit, false), limit: next.limit, next, ...base }
 }

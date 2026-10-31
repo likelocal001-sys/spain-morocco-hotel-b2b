@@ -145,6 +145,7 @@ export interface StayPayment {
   amount?: number
   limit?: string
   paid: boolean
+  paidAt?: string
 }
 
 export function stayPayments(r: Reservation): StayPayment[] {
@@ -162,6 +163,7 @@ export function stayPayments(r: Reservation): StayPayment[] {
       amount: n?.amount ?? fallback,
       limit: n?.paymentLimit ?? r.paymentLimit,
       paid: n?.paid ?? r.paid,
+      paidAt: n?.paidAt,
     }
   })
 }

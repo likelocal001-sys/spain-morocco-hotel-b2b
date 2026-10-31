@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { blockProgress, formatEUR, getDeadline, negotiationProgress, unseenRevisions } from '@/lib/format'
+import { blockProgress, formatEUR, getDeadline, negotiationProgress, stayPayments, unseenRevisions } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
@@ -230,7 +230,7 @@ export function PipelineTab() {
                       onClick={() => setPayingId(r.id)}
                     >
                           <CircleDollarSign aria-hidden="true" />
-                          {t.markPaid}
+                          {t.depositStatus} {stayPayments(r).filter((p) => p.paid).length}/{stayPayments(r).length}
                         </Button>
                       )}
                       {r.status === 'confirmed' && (
@@ -279,7 +279,7 @@ export function PipelineTab() {
         </Table>
       )}
 
-      {payingId && <PaymentStatusDialog reservationId={payingId} onClose={() => setPayingId(null)} />}
+      {payingId && <PaymentStatusDialog reservationId={payingId} mode="admin" onClose={() => setPayingId(null)} />}
       {workspaceId && (
         <NegotiationWorkspace
           reservationId={workspaceId}

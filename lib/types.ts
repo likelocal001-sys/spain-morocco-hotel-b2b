@@ -25,6 +25,7 @@ export interface StayNegotiation {
   amount?: number
   paymentLimit?: string
   paid?: boolean
+  paidAt?: string
 }
 
 export type RoomType = 'single' | 'twin' | 'triple'

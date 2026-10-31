@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { AlertTriangle, FileText, Plus, Receipt } from 'lucide-react'
+import { PaymentStatusDialog } from '@/components/admin/payment-status-dialog'
 import { DocumentDialog, type DocumentKind } from '@/components/document-dialog'
 import { StatCard } from '@/components/stat-card'
 import { StatusFilter } from '@/components/status-filter'
@@ -19,6 +20,7 @@ export function ClientPortal() {
   const [bookingOpen, setBookingOpen] = useState(false)
   const [editing, setEditing] = useState<Reservation | null>(null)
   const [invoiceOpen, setInvoiceOpen] = useState(false)
+  const [payingId, setPayingId] = useState<string | null>(null)
   const [doc, setDoc] = useState<{ reservation: Reservation; kind: DocumentKind } | null>(null)
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<ReservationStatus | 'all'>('all')
@@ -97,9 +99,10 @@ export function ClientPortal() {
         </div>
         <ClientReservationsTable
           reservations={filtered}
-            onOpenDocument={(reservation, kind) => setDoc({ reservation, kind })}
-            onEdit={setEditing}
-          />
+          onOpenDocument={(reservation, kind) => setDoc({ reservation, kind })}
+          onEdit={setEditing}
+          onOpenPayments={(reservation) => setPayingId(reservation.id)}
+        />
       </section>
 
       <NewBookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
@@ -112,6 +115,7 @@ export function ClientPortal() {
         />
       )}
       <InvoiceDialog open={invoiceOpen} onOpenChange={setInvoiceOpen} />
+      {payingId && <PaymentStatusDialog reservationId={payingId} mode="client" onClose={() => setPayingId(null)} />}
       {doc && <DocumentDialog reservation={doc.reservation} kind={doc.kind} onOpenChange={(o) => !o && setDoc(null)} />}
     </div>
   )

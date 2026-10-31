@@ -1,11 +1,11 @@
 'use client'
 
-import { FileCheck2, FileSpreadsheet, Pencil, PencilLine, Wallet } from 'lucide-react'
+import { CircleCheck, FileCheck2, FileSpreadsheet, Pencil, PencilLine, Wallet } from 'lucide-react'
 import type { DocumentKind } from '@/components/document-dialog'
 import { DeadlineCell, HotelCell, RoomsCell, StatusBadge, StayCell } from '@/components/reservation-cells'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { getDeadline, unseenRevisions } from '@/lib/format'
+import { getDeadline, stayPayments, unseenRevisions } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation } from '@/lib/types'
@@ -14,10 +14,12 @@ export function ClientReservationsTable({
   reservations,
   onOpenDocument,
   onEdit,
+  onOpenPayments,
 }: {
   reservations: Reservation[]
   onOpenDocument: (reservation: Reservation, kind: DocumentKind) => void
   onEdit: (reservation: Reservation) => void
+  onOpenPayments: (reservation: Reservation) => void
 }) {
   const { t } = useApp()
 
@@ -100,6 +102,20 @@ export function ClientReservationsTable({
                     <Wallet aria-hidden="true" />
                     {t.paymentNotice}
                   </Button>
+                  {confirmed && (
+                    <Button
+                      size="xs"
+                      variant={r.paid ? 'outline' : 'default'}
+                      className={cn(r.paid && 'border-success/40 text-success hover:bg-success/10 hover:text-success')}
+                      onClick={() => onOpenPayments(r)}
+                    >
+                      <CircleCheck aria-hidden="true" />
+                      {r.paid ? t.deposited : t.markDeposited}{' '}
+                      <span className="font-mono tabular-nums">
+                        {stayPayments(r).filter((p) => p.paid).length}/{stayPayments(r).length}
+                      </span>
+                    </Button>
+                  )}
                   {r.roomingList && (
                     <Button
                       variant="ghost"

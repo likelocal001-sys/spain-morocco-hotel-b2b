@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CITIES, CUSTOM_CITY, cityLabel } from '@/lib/i18n'
+import { CITIES, CUSTOM_CITY, REQUEST_TAGS, REQUEST_TAG_LABELS, cityLabel } from '@/lib/i18n'
 import { addDays, nightsBetween } from '@/lib/format'
 import { useApp } from '@/lib/store'
-import type { City } from '@/lib/types'
+import { cn } from '@/lib/utils'
+import type { City, RequestTag } from '@/lib/types'
 
 export interface StayDraft {
   id: string
@@ -18,6 +19,7 @@ export interface StayDraft {
   stars: string
   hotelId: string
   customCity: boolean
+  requestTags: RequestTag[]
 }
 
 const STAR_OPTIONS = ['3', '4', '5']
@@ -35,6 +37,7 @@ export function createStayDraft(checkIn: string, city: City = 'Madrid', stars = 
     stars,
     hotelId: 'none',
     customCity,
+    requestTags: [],
   }
 }
 
@@ -222,6 +225,39 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span id={`${fieldId}-req`} className="text-xs font-medium">
+                  {t.quickRequests}
+                </span>
+                <div role="group" aria-labelledby={`${fieldId}-req`} className="flex flex-wrap gap-1.5">
+                  {REQUEST_TAGS.map((tag) => {
+                    const active = stay.requestTags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() =>
+                          patch(index, {
+                            requestTags: active
+                              ? stay.requestTags.filter((x) => x !== tag)
+                              : [...stay.requestTags, tag],
+                          })
+                        }
+                        className={cn(
+                          'rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                          active
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-input bg-background hover:border-primary hover:text-primary',
+                        )}
+                      >
+                        {REQUEST_TAG_LABELS[tag][lang]}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </li>
           )

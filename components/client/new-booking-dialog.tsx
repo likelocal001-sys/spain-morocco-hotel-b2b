@@ -10,11 +10,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { StayEditor, createStayDraft, type StayDraft } from '@/components/client/stay-editor'
-import { REQUEST_TAGS, REQUEST_TAG_LABELS } from '@/lib/i18n'
 import { addDays, formatFileSize, nightsBetween } from '@/lib/format'
 import { useApp } from '@/lib/store'
-import { cn } from '@/lib/utils'
-import type { AttachedFile, RequestTag, RoomCounts, Stay } from '@/lib/types'
+import type { AttachedFile, RoomCounts, Stay } from '@/lib/types'
 
 const ROOM_TYPES: { key: keyof RoomCounts; label: string; pax: string }[] = [
   { key: 'single', label: 'Single', pax: '1 pax' },
@@ -82,14 +80,13 @@ function initialForm() {
     stays: [createStayDraft(addDays(new Date(), 30))] as StayDraft[],
     rooms: { single: 0, twin: 10, triple: 0 } as RoomCounts,
     breakfast: true,
-    requestTags: [] as RequestTag[],
     requests: '',
     roomingList: undefined as AttachedFile | undefined,
   }
 }
 
 export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { t, lang, addReservation } = useApp()
+  const { t, addReservation } = useApp()
   const [form, setForm] = useState(initialForm)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -126,7 +123,9 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
       checkOut: s.checkOut,
       stars: Number(s.stars),
       hotelId: s.hotelId === 'none' ? undefined : s.hotelId,
+      requestTags: s.requestTags,
     }))
+    const allRequestTags = [...new Set(stays.flatMap((s) => s.requestTags ?? []))]
     const first = stays[0]
     const created = addReservation({
       groupName: form.groupName.trim(),
@@ -139,7 +138,7 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
       rooms: form.rooms,
       breakfast: form.breakfast,
       roomingList: form.roomingList,
-      requestTags: form.requestTags,
+      requestTags: allRequestTags,
       requests: form.requests.trim(),
     })
     toast.success(t.submitted, { description: created.id })
@@ -243,37 +242,8 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">{t.quickRequests}</span>
-            <div className="flex flex-wrap gap-1.5">
-              {REQUEST_TAGS.map((tag) => {
-                const active = form.requestTags.includes(tag)
-                return (
-                  <button
-                    key={tag}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() =>
-                      update(
-                        'requestTags',
-                        active ? form.requestTags.filter((x) => x !== tag) : [...form.requestTags, tag],
-                      )
-                    }
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                      active
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-input bg-background hover:border-primary hover:text-primary',
-                    )}
-                  >
-                    {REQUEST_TAG_LABELS[tag][lang]}
-                  </button>
-                )
-              })}
-            </div>
-            <Label htmlFor="requests" className="sr-only">
-              {t.requests}
-            </Label>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="requests">{t.requests}</Label>
             <Textarea
               id="requests"
               rows={2}

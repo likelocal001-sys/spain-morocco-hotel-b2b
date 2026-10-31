@@ -19,7 +19,7 @@ function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
     r.rooms.twin && `${r.rooms.twin} doble${r.rooms.twin > 1 ? 's' : ''} (twin)`,
     r.rooms.triple && `${r.rooms.triple} triple${r.rooms.triple > 1 ? 's' : ''}`,
   ].filter(Boolean)
-  const requests = r.requestTags.map((tag) => REQUEST_TAG_LABELS[tag].es)
+  const requests = (stay.requestTags ?? r.requestTags).map((tag) => REQUEST_TAG_LABELS[tag].es)
   const hasKorean = /[\u3131-\uD79D]/.test(r.requests)
 
   const subject = `Solicitud de reserva de grupo – ${r.id} (${formatDate(stay.checkIn, 'es')})`

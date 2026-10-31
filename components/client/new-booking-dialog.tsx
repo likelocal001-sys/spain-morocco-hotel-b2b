@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { StayEditor, createStayDraft, type StayDraft } from '@/components/client/stay-editor'
-import { addDays, formatFileSize, nightsBetween } from '@/lib/format'
+import { addDays, formatFileSize, getStays, nightsBetween } from '@/lib/format'
+import { CITIES } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
-import type { AttachedFile, RoomCounts, Stay } from '@/lib/types'
+import type { AttachedFile, Reservation, RoomCounts, Stay } from '@/lib/types'
 
 const ROOM_TYPES: { key: keyof RoomCounts; label: string; pax: string }[] = [
   { key: 'single', label: 'Single', pax: '1 pax' },
@@ -74,7 +75,26 @@ function RoomStepper({
   )
 }
 
-function initialForm() {
+function initialForm(reservation?: Reservation) {
+  if (reservation) {
+    return {
+      groupName: reservation.groupName,
+      stays: getStays(reservation).map<StayDraft>((s) => ({
+        id: s.id,
+        city: s.city,
+        checkIn: s.checkIn,
+        checkOut: s.checkOut,
+        stars: String(s.stars),
+        hotelId: s.hotelId ?? 'none',
+        customCity: !(CITIES as string[]).includes(s.city),
+        requestTags: s.requestTags ?? [],
+      })),
+      rooms: { ...reservation.rooms } as RoomCounts,
+      breakfast: reservation.breakfast,
+      requests: reservation.requests ?? '',
+      roomingList: reservation.roomingList as AttachedFile | undefined,
+    }
+  }
   return {
     groupName: '',
     stays: [createStayDraft(addDays(new Date(), 30))] as StayDraft[],
@@ -85,13 +105,24 @@ function initialForm() {
   }
 }
 
-export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { t, addReservation } = useApp()
-  const [form, setForm] = useState(initialForm)
+type FormState = ReturnType<typeof initialForm>
+
+export function NewBookingDialog({
+  open,
+  onOpenChange,
+  reservation,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  reservation?: Reservation
+}) {
+  const { t, addReservation, editReservation } = useApp()
+  const isEdit = Boolean(reservation)
+  const [form, setForm] = useState<FormState>(() => initialForm(reservation))
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const update = <K extends keyof ReturnType<typeof initialForm>>(key: K, value: ReturnType<typeof initialForm>[K]) =>
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
   const nights = form.stays.reduce((sum, s) => sum + nightsBetween(s.checkIn, s.checkOut), 0)
@@ -127,7 +158,7 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
     }))
     const allRequestTags = [...new Set(stays.flatMap((s) => s.requestTags ?? []))]
     const first = stays[0]
-    const created = addReservation({
+    const input = {
       groupName: form.groupName.trim(),
       checkIn: first.checkIn,
       checkOut: stays[stays.length - 1].checkOut,
@@ -140,7 +171,21 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
       roomingList: form.roomingList,
       requestTags: allRequestTags,
       requests: form.requests.trim(),
-    })
+    }
+
+    if (reservation) {
+      if (!editReservation(reservation.id, input)) {
+        toast.info(t.noChanges)
+        onOpenChange(false)
+        return
+      }
+      toast.success(t.updated, { description: `${reservation.id} · ${t.updatedDesc}` })
+      setError(null)
+      onOpenChange(false)
+      return
+    }
+
+    const created = addReservation(input)
     toast.success(t.submitted, { description: created.id })
     setForm(initialForm())
     setError(null)
@@ -151,8 +196,13 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{t.formTitle}</DialogTitle>
-          <DialogDescription>{t.formDesc}</DialogDescription>
+          <DialogTitle>
+            {isEdit ? t.editFormTitle : t.formTitle}
+            {reservation && (
+              <span className="ml-2 font-mono text-sm font-normal text-muted-foreground">{reservation.id}</span>
+            )}
+          </DialogTitle>
+          <DialogDescription>{isEdit ? t.editFormDesc : t.formDesc}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
@@ -263,7 +313,7 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t.cancel}
             </Button>
-            <Button type="submit">{t.submit}</Button>
+            <Button type="submit">{isEdit ? t.saveChanges : t.submit}</Button>
           </div>
         </form>
       </DialogContent>

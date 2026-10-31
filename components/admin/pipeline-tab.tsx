@@ -1,7 +1,16 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { BadgeCheck, CircleDollarSign, FileSpreadsheet, Handshake, Mail, Pencil, XCircle } from 'lucide-react'
+import {
+  BadgeCheck,
+  CircleDollarSign,
+  FileSpreadsheet,
+  Handshake,
+  Mail,
+  Pencil,
+  PencilLine,
+  XCircle,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { DeadlineCell, HotelCell, RoomsCell, StatusBadge, StayCell } from '@/components/reservation-cells'
 import { StatusFilter } from '@/components/status-filter'
@@ -9,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatEUR, getDeadline, negotiationProgress } from '@/lib/format'
+import { formatEUR, getDeadline, negotiationProgress, unseenRevisions } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
@@ -126,8 +135,18 @@ export function PipelineTab() {
                       title={t.openWorkspace}
                       className="text-left text-sm font-medium underline-offset-4 hover:text-primary hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
-                      {r.groupName}
+                    {r.groupName}
+                  </button>
+                  {unseenRevisions(r).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setWorkspaceId(r.id)}
+                      className="mt-1 flex w-fit items-center gap-1 rounded-full bg-warning px-2 py-0.5 text-[11px] font-semibold text-warning-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      <PencilLine className="size-3" aria-hidden="true" />
+                      {t.revisionBadge} {unseenRevisions(r).length}
                     </button>
+                  )}
                     {r.status !== 'cancelled' && (
                       <div className="mt-1 flex items-center gap-1.5" aria-label={t.progress}>
                         <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">

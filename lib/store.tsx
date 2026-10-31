@@ -1,12 +1,15 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { getStays, nightsBetween, totalRooms } from './format'
+import { getStays, nightsBetween, snapshotOf, totalRooms } from './format'
 import { dictionaries, type Dict } from './i18n'
 import { AGENCIES, CURRENT_AGENCY_ID, SEED_HOTELS, createSeedReservations } from './seed-data'
-import type { Agency, Hotel, Lang, Reservation, Role } from './types'
+import type { Agency, Hotel, Lang, Reservation, Revision, Role } from './types'
 
-export type NewReservationInput = Omit<Reservation, 'id' | 'status' | 'paid' | 'createdAt' | 'agencyId'>
+export type NewReservationInput = Omit<
+  Reservation,
+  'id' | 'status' | 'paid' | 'createdAt' | 'agencyId' | 'revisions' | 'negotiation' | 'groupChecks'
+>
 
 interface AppContextValue {
   lang: Lang
@@ -24,6 +27,8 @@ interface AppContextValue {
   feeFor: (reservation: Reservation) => number
   addReservation: (input: NewReservationInput) => Reservation
   updateReservation: (id: string, patch: Partial<Reservation>) => void
+  editReservation: (id: string, input: NewReservationInput) => boolean
+  acknowledgeRevisions: (id: string) => void
   saveHotel: (hotel: Hotel) => void
   setHotelFeeRate: (hotelId: string, rate: number) => void
 }
@@ -93,6 +98,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setReservations((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
   }, [])
 
+  const editReservation = useCallback(
+    (id: string, input: NewReservationInput) => {
+      const current = reservations.find((r) => r.id === id)
+      if (!current) return false
+      const before = snapshotOf(current)
+      const after = snapshotOf({ ...current, ...input })
+      if (JSON.stringify(before) === JSON.stringify(after)) return false
+      const revision: Revision = {
+        id: Math.random().toString(36).slice(2, 10),
+        at: new Date().toISOString(),
+        before,
+        after,
+        seen: false,
+      }
+      setReservations((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...input, revisions: [...(r.revisions ?? []), revision] } : r)),
+      )
+      return true
+    },
+    [reservations],
+  )
+
+  const acknowledgeRevisions = useCallback((id: string) => {
+    setReservations((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, revisions: r.revisions?.map((rev) => ({ ...rev, seen: true })) } : r)),
+    )
+  }, [])
+
   const saveHotel = useCallback((hotel: Hotel) => {
     setHotels((prev) =>
       prev.some((h) => h.id === hotel.id) ? prev.map((h) => (h.id === hotel.id ? hotel : h)) : [hotel, ...prev],
@@ -120,6 +153,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       feeFor,
       addReservation,
       updateReservation,
+      editReservation,
+      acknowledgeRevisions,
       saveHotel,
       setHotelFeeRate,
     }),
@@ -134,6 +169,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       feeFor,
       addReservation,
       updateReservation,
+      editReservation,
+      acknowledgeRevisions,
       saveHotel,
       setHotelFeeRate,
     ],

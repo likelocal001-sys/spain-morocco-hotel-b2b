@@ -26,7 +26,22 @@ import {
 } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import type { GroupCheck, NegotiationStep, Reservation, Stay, StayNegotiation } from '@/lib/types'
+import type {
+  GroupCheck,
+  NegotiationStep,
+  Reservation,
+  RoomCounts,
+  RoomType,
+  Stay,
+  StayNegotiation,
+} from '@/lib/types'
+import { RevisionPanel } from './revision-panel'
+
+const ROOM_TYPES: { key: RoomType; label: string }[] = [
+  { key: 'single', label: 'Single' },
+  { key: 'twin', label: 'Twin' },
+  { key: 'triple', label: 'Triple' },
+]
 
 interface Props {
   reservationId: string
@@ -86,6 +101,8 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
           </DialogDescription>
         </DialogHeader>
 
+        <RevisionPanel reservation={r} />
+
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="font-medium">{t.progress}</span>
@@ -144,7 +161,7 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
                 key={stay.id}
                 index={index}
                 stay={stay}
-                rooms={rooms}
+                rooms={r.rooms}
                 negotiation={r.negotiation?.[stay.id] ?? { steps: [] }}
                 onPatch={(changes, startsWork) => patchStay(stay.id, changes, startsWork)}
                 onAssignHotel={(hotelId) => assignHotel(stay.id, hotelId)}
@@ -185,7 +202,7 @@ function StayCard({
 }: {
   index: number
   stay: Stay
-  rooms: number
+  rooms: RoomCounts
   negotiation: StayNegotiation
   onPatch: (changes: Partial<StayNegotiation>, startsWork?: boolean) => void
   onAssignHotel: (hotelId: string | undefined) => void
@@ -199,7 +216,9 @@ function StayCard({
     ...cityHotels.map((h) => ({ value: h.id, label: `${h.nameEs} · ${h.stars}★` })),
   ]
   const done = negotiation.steps.length
-  const estimate = negotiation.rate ? negotiation.rate * rooms * nights : undefined
+  const rateFor = (type: RoomType) => negotiation.rates?.[type] ?? negotiation.rate
+  const perNight = ROOM_TYPES.reduce((sum, { key }) => sum + (rateFor(key) ?? 0) * rooms[key], 0)
+  const estimate = perNight > 0 ? perNight * nights : undefined
   const fieldId = `neg-${stay.id}`
 
   return (
@@ -278,31 +297,52 @@ function StayCard({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor={`${fieldId}-rate`} className="text-xs">
-                {t.quotedRate}
-              </Label>
-              <Input
-                id={`${fieldId}-rate`}
-                type="number"
-                inputMode="decimal"
-                min={0}
-                value={negotiation.rate ?? ''}
-                onChange={(e) => {
-                  const value = Number(e.target.value)
-                  onPatch({ rate: e.target.value && value >= 0 ? value : undefined })
-                }}
-                className="font-mono"
-              />
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1.5 text-xs font-medium">{t.ratesByType}</legend>
+            <div className="grid grid-cols-3 gap-2">
+              {ROOM_TYPES.map(({ key, label }) => {
+                const count = rooms[key]
+                return (
+                  <div key={key} className={cn('flex flex-col gap-1', count === 0 && 'opacity-50')}>
+                    <Label htmlFor={`${fieldId}-rate-${key}`} className="flex justify-between text-[11px] font-normal">
+                      {label}
+                      <span className="font-mono text-muted-foreground">×{count}</span>
+                    </Label>
+                    <Input
+                      id={`${fieldId}-rate-${key}`}
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      placeholder="€"
+                      value={rateFor(key) ?? ''}
+                      onChange={(e) => {
+                        const value = Number(e.target.value)
+                        const next = { ...negotiation.rates, [key]: e.target.value && value >= 0 ? value : undefined }
+                        onPatch({ rates: next, rate: undefined })
+                      }}
+                      className="h-8 font-mono"
+                    />
+                  </div>
+                )
+              })}
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium">{t.estimate}</span>
-              <span className="flex h-8 items-center font-mono text-sm tabular-nums">
-                {estimate ? formatEUR(estimate, lang) : '—'}
+            <div className="flex items-center justify-between rounded-md bg-muted/50 px-2.5 py-1.5 text-xs">
+              <span className="font-medium">{t.estimate}</span>
+              <span className="font-mono tabular-nums">
+                {estimate ? (
+                  <>
+                    <span className="text-muted-foreground">
+                      {formatEUR(perNight, lang)} × {nights}
+                      {t.nightsUnit} ={' '}
+                    </span>
+                    <span className="font-semibold">{formatEUR(estimate, lang)}</span>
+                  </>
+                ) : (
+                  '—'
+                )}
               </span>
             </div>
-          </div>
+          </fieldset>
         </div>
 
         <div className="flex flex-col gap-3">

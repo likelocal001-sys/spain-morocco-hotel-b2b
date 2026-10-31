@@ -1,11 +1,11 @@
 'use client'
 
-import { FileCheck2, FileSpreadsheet, Wallet } from 'lucide-react'
+import { FileCheck2, FileSpreadsheet, Pencil, PencilLine, Wallet } from 'lucide-react'
 import type { DocumentKind } from '@/components/document-dialog'
 import { DeadlineCell, HotelCell, RoomsCell, StatusBadge, StayCell } from '@/components/reservation-cells'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { getDeadline } from '@/lib/format'
+import { getDeadline, unseenRevisions } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation } from '@/lib/types'
@@ -13,9 +13,11 @@ import type { Reservation } from '@/lib/types'
 export function ClientReservationsTable({
   reservations,
   onOpenDocument,
+  onEdit,
 }: {
   reservations: Reservation[]
   onOpenDocument: (reservation: Reservation, kind: DocumentKind) => void
+  onEdit: (reservation: Reservation) => void
 }) {
   const { t } = useApp()
 
@@ -50,7 +52,15 @@ export function ClientReservationsTable({
               )}
             >
               <TableCell className="pl-4 font-mono text-xs font-medium">{r.id}</TableCell>
-              <TableCell className="max-w-[240px] text-sm font-medium whitespace-normal">{r.groupName}</TableCell>
+              <TableCell className="max-w-[240px] text-sm font-medium whitespace-normal">
+                {r.groupName}
+                {unseenRevisions(r).length > 0 && (
+                  <span className="mt-1 flex w-fit items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
+                    <PencilLine className="size-3" aria-hidden="true" />
+                    {t.revisionPending}
+                  </span>
+                )}
+              </TableCell>
               <TableCell>
                 <StayCell reservation={r} />
               </TableCell>
@@ -68,6 +78,10 @@ export function ClientReservationsTable({
               </TableCell>
               <TableCell className="pr-4">
                 <div className="flex gap-1">
+                  <Button variant="outline" size="xs" onClick={() => onEdit(r)}>
+                    <Pencil aria-hidden="true" />
+                    {t.edit}
+                  </Button>
                   <Button
                     variant="outline"
                     size="xs"

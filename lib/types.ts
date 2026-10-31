@@ -19,8 +19,11 @@ export type GroupCheck = 'roomingChecked' | 'requestsShared' | 'paymentInformed'
 export interface StayNegotiation {
   steps: NegotiationStep[]
   rate?: number
+  rates?: Partial<Record<RoomType, number>>
   note?: string
 }
+
+export type RoomType = 'single' | 'twin' | 'triple'
 export type RequestTag =
   | 'lateCheckout'
   | 'earlyCheckin'
@@ -35,11 +38,7 @@ export interface AttachedFile {
   url?: string
 }
 
-export interface RoomCounts {
-  single: number
-  twin: number
-  triple: number
-}
+export type RoomCounts = Record<RoomType, number>
 
 export interface Stay {
   id: string
@@ -74,6 +73,24 @@ export interface Reservation {
   createdAt: string
   negotiation?: Record<string, StayNegotiation>
   groupChecks?: GroupCheck[]
+  revisions?: Revision[]
+}
+
+export interface BookingSnapshot {
+  groupName: string
+  stays: Stay[]
+  rooms: RoomCounts
+  breakfast: boolean
+  roomingList?: AttachedFile
+  requests: string
+}
+
+export interface Revision {
+  id: string
+  at: string
+  before: BookingSnapshot
+  after: BookingSnapshot
+  seen: boolean
 }
 
 export interface HotelContact {

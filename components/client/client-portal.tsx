@@ -17,6 +17,7 @@ import { NewBookingDialog } from './new-booking-dialog'
 export function ClientPortal() {
   const { t, reservations, currentAgencyId, agencyName } = useApp()
   const [bookingOpen, setBookingOpen] = useState(false)
+  const [editing, setEditing] = useState<Reservation | null>(null)
   const [invoiceOpen, setInvoiceOpen] = useState(false)
   const [doc, setDoc] = useState<{ reservation: Reservation; kind: DocumentKind } | null>(null)
   const [query, setQuery] = useState('')
@@ -96,11 +97,20 @@ export function ClientPortal() {
         </div>
         <ClientReservationsTable
           reservations={filtered}
-          onOpenDocument={(reservation, kind) => setDoc({ reservation, kind })}
-        />
+            onOpenDocument={(reservation, kind) => setDoc({ reservation, kind })}
+            onEdit={setEditing}
+          />
       </section>
 
       <NewBookingDialog open={bookingOpen} onOpenChange={setBookingOpen} />
+      {editing && (
+        <NewBookingDialog
+          key={editing.id}
+          open
+          reservation={editing}
+          onOpenChange={(o) => !o && setEditing(null)}
+        />
+      )}
       <InvoiceDialog open={invoiceOpen} onOpenChange={setInvoiceOpen} />
       {doc && <DocumentDialog reservation={doc.reservation} kind={doc.kind} onOpenChange={(o) => !o && setDoc(null)} />}
     </div>

@@ -1,4 +1,4 @@
-import type { Lang, Reservation, RoomCounts, Stay } from './types'
+import type { BookingSnapshot, Lang, Reservation, RoomCounts, Stay } from './types'
 
 export function toISODate(date: Date) {
   const y = date.getFullYear()
@@ -80,6 +80,21 @@ export function getStays(r: Reservation): Stay[] {
 
 export const NEGOTIATION_STEP_COUNT = 5
 export const GROUP_CHECK_COUNT = 4
+
+export function snapshotOf(r: Reservation): BookingSnapshot {
+  return {
+    groupName: r.groupName,
+    stays: getStays(r).map((s) => ({ ...s, requestTags: s.requestTags ?? [] })),
+    rooms: { ...r.rooms },
+    breakfast: r.breakfast,
+    roomingList: r.roomingList ? { name: r.roomingList.name, size: r.roomingList.size } : undefined,
+    requests: r.requests,
+  }
+}
+
+export function unseenRevisions(r: Reservation) {
+  return (r.revisions ?? []).filter((rev) => !rev.seen)
+}
 
 export function negotiationProgress(r: Reservation) {
   const stays = getStays(r)

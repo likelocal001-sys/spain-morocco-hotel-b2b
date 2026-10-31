@@ -1,7 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { BadgeCheck, ReceiptText } from 'lucide-react'
+import { CommissionStateBadge, ReceiptDialog, useCommission } from '@/components/commission-receipt'
 import { DocHeader, PrintButton } from '@/components/document-dialog'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,7 +13,7 @@ import { formatEUR, formatMonth, formatShortDate, roomNights } from '@/lib/forma
 import { useApp } from '@/lib/store'
 
 export function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { t, lang, reservations, currentAgencyId, feeFor, agencyName } = useApp()
+  const { t, lang, reservations, currentAgencyId, feeFor, agencyName, reportCommissionPaid } = useApp()
 
   const confirmed = useMemo(
     () => reservations.filter((r) => r.agencyId === currentAgencyId && r.status === 'confirmed'),
@@ -26,6 +29,8 @@ export function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
   const hotelTotal = lines.reduce((sum, r) => sum + (r.finalAmount ?? 0), 0)
   const feeTotal = lines.reduce((sum, r) => sum + feeFor(r), 0)
+  const { settlement, state } = useCommission(currentAgencyId, selectedMonth)
+  const [receiptOpen, setReceiptOpen] = useState(false)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,9 +119,51 @@ export function InvoiceDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           )}
         </div>
 
+        {lines.length > 0 && selectedMonth && (
+          <section
+            className="no-print flex flex-col gap-3 rounded-lg border bg-muted/40 p-4"
+            aria-label={t.commissionPayment}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold">{t.commissionPayment}</span>
+                <span className="font-mono text-sm font-bold text-primary tabular-nums">
+                  {formatEUR(feeTotal, lang)}
+                </span>
+                <CommissionStateBadge state={state} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {state === 'unpaid' && (
+                  <Button size="sm" onClick={() => reportCommissionPaid(currentAgencyId, selectedMonth, true)}>
+                    <BadgeCheck aria-hidden="true" />
+                    {t.reportCommissionPaid}
+                  </Button>
+                )}
+                {state === 'reported' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => reportCommissionPaid(currentAgencyId, selectedMonth, false)}
+                  >
+                    {t.undoReport}
+                  </Button>
+                )}
+                {settlement?.receiptNo && (
+                  <Button size="sm" variant="outline" onClick={() => setReceiptOpen(true)}>
+                    <ReceiptText aria-hidden="true" />
+                    {t.viewReceipt} · {settlement.receiptNo}
+                  </Button>
+                )}
+              </div>
+            </div>
+            {state === 'unpaid' && <p className="text-xs text-muted-foreground">{t.commissionReportHint}</p>}
+          </section>
+        )}
+
         <div className="no-print flex justify-end">
           <PrintButton />
         </div>
+        <ReceiptDialog settlement={settlement} open={receiptOpen} onOpenChange={setReceiptOpen} />
       </DialogContent>
     </Dialog>
   )

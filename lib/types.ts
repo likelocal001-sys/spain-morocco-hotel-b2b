@@ -126,6 +126,15 @@ export interface Hotel {
   paymentDaysBefore?: number
 }
 
+export interface CommissionSettlement {
+  agencyId: string
+  month: string
+  reportedAt?: string
+  receivedAt?: string
+  receivedAmount?: number
+  receiptNo?: string
+}
+
 export interface Agency {
   id: string
   nameKo: string

@@ -4,7 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { getStays, nightsBetween, snapshotOf, totalRooms } from './format'
 import { dictionaries, type Dict } from './i18n'
 import { AGENCIES, CURRENT_AGENCY_ID, SEED_HOTELS, createSeedReservations } from './seed-data'
-import type { Agency, Hotel, Lang, Reservation, Revision, Role } from './types'
+import type { Agency, CommissionSettlement, Hotel, Lang, Reservation, Revision, Role } from './types'
+
+export const settlementKey = (agencyId: string, month: string) => `${agencyId}:${month}`
 
 export type NewReservationInput = Omit<
   Reservation,
@@ -31,6 +33,10 @@ interface AppContextValue {
   acknowledgeRevisions: (id: string) => void
   saveHotel: (hotel: Hotel) => void
   setHotelFeeRate: (hotelId: string, rate: number) => void
+  settlements: Record<string, CommissionSettlement>
+  commissionFor: (agencyId: string, month: string) => number
+  reportCommissionPaid: (agencyId: string, month: string, reported: boolean) => void
+  confirmCommissionReceived: (agencyId: string, month: string) => void
 }
 
 export const DEFAULT_FEE_RATE = 3
@@ -136,6 +142,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setHotels((prev) => prev.map((h) => (h.id === hotelId ? { ...h, feeRate: rate } : h)))
   }, [])
 
+  const receiptSequence = useRef(0)
+  const [settlements, setSettlements] = useState<Record<string, CommissionSettlement>>({})
+
+  const commissionFor = useCallback(
+    (agencyId: string, month: string) =>
+      reservations
+        .filter((r) => r.agencyId === agencyId && r.status === 'confirmed' && r.checkIn.slice(0, 7) === month)
+        .reduce((sum, r) => sum + feeFor(r), 0),
+    [reservations, feeFor],
+  )
+
+  const reportCommissionPaid = useCallback((agencyId: string, month: string, reported: boolean) => {
+    const key = settlementKey(agencyId, month)
+    setSettlements((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], agencyId, month, reportedAt: reported ? new Date().toISOString() : undefined },
+    }))
+  }, [])
+
+  const confirmCommissionReceived = useCallback(
+    (agencyId: string, month: string) => {
+      const key = settlementKey(agencyId, month)
+      receiptSequence.current += 1
+      const receiptNo = `RCP-${month.replace('-', '').slice(2)}-${String(receiptSequence.current).padStart(3, '0')}`
+      const receivedAmount = commissionFor(agencyId, month)
+      setSettlements((prev) => ({
+        ...prev,
+        [key]: {
+          ...prev[key],
+          agencyId,
+          month,
+          reportedAt: prev[key]?.reportedAt ?? new Date().toISOString(),
+          receivedAt: new Date().toISOString(),
+          receivedAmount,
+          receiptNo,
+        },
+      }))
+    },
+    [commissionFor],
+  )
+
   const value = useMemo<AppContextValue>(
     () => ({
       lang,
@@ -157,8 +204,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       acknowledgeRevisions,
       saveHotel,
       setHotelFeeRate,
+      settlements,
+      commissionFor,
+      reportCommissionPaid,
+      confirmCommissionReceived,
     }),
     [
+      settlements,
+      commissionFor,
+      reportCommissionPaid,
+      confirmCommissionReceived,
       lang,
       role,
       agencyName,

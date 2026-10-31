@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { BedDouble, CalendarCheck, Euro, Info } from 'lucide-react'
+import { CommissionSettlements } from '@/components/admin/commission-settlements'
 import { StatCard } from '@/components/stat-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -85,6 +86,8 @@ export function BillingTab() {
           hint={`${t.avgRate}: ${formatEUR(totals.roomNights ? totals.fee / totals.roomNights : 0, lang)}`}
         />
       </div>
+
+      <CommissionSettlements />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <section className="rounded-xl border bg-card shadow-xs" aria-labelledby="by-hotel">

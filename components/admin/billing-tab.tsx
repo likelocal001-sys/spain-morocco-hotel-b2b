@@ -5,8 +5,8 @@ import { BedDouble, CalendarCheck, Euro, Info } from 'lucide-react'
 import { StatCard } from '@/components/stat-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatEUR, formatMonth, roomNights, totalRooms } from '@/lib/format'
-import { FEE_RATES, useApp } from '@/lib/store'
+import { formatEUR, formatMonth, getStays, nightsBetween, roomNights, totalRooms } from '@/lib/format'
+import { DEFAULT_FEE_RATE, FEE_RATES, useApp } from '@/lib/store'
 
 interface Aggregate {
   bookings: number
@@ -26,7 +26,7 @@ function Bar({ value, max }: { value: number; max: number }) {
 }
 
 export function BillingTab() {
-  const { t, lang, reservations, hotels, feeFor, setHotelFeeRate } = useApp()
+  const { t, lang, reservations, hotels, hotelById, feeFor, setHotelFeeRate } = useApp()
 
   const { byHotel, monthRows, totals } = useMemo(() => {
     const byHotel = new Map<string, Aggregate>()
@@ -37,14 +37,22 @@ export function BillingTab() {
       const rn = roomNights(r)
       const fee = feeFor(r)
       const month = r.checkIn.slice(0, 7)
-      const hotelKey = r.hotelId ?? ''
-      if (!byHotel.has(hotelKey)) byHotel.set(hotelKey, empty())
       if (!byMonth.has(month)) byMonth.set(month, empty())
-      for (const agg of [byHotel.get(hotelKey)!, byMonth.get(month)!, totals]) {
+      for (const agg of [byMonth.get(month)!, totals]) {
         agg.bookings += 1
         agg.rooms += totalRooms(r.rooms)
         agg.roomNights += rn
         agg.fee += fee
+      }
+      for (const stay of getStays(r)) {
+        const hotelKey = stay.hotelId ?? ''
+        const stayRn = totalRooms(r.rooms) * nightsBetween(stay.checkIn, stay.checkOut)
+        if (!byHotel.has(hotelKey)) byHotel.set(hotelKey, empty())
+        const agg = byHotel.get(hotelKey)!
+        agg.bookings += 1
+        agg.rooms += totalRooms(r.rooms)
+        agg.roomNights += stayRn
+        agg.fee += stayRn * (hotelById(stay.hotelId)?.feeRate ?? DEFAULT_FEE_RATE)
       }
     }
     const monthRows = Array.from(byMonth.entries()).sort(([a], [b]) => b.localeCompare(a))

@@ -8,30 +8,29 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { addDays, formatEUR, formatFileSize, roomNights } from '@/lib/format'
+import { CITY_LABELS } from '@/lib/i18n'
+import { addDays, formatEUR, formatFileSize, formatShortDate, getStays, nightsBetween, roomNights } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import type { AttachedFile, Reservation } from '@/lib/types'
 
 export function ConfirmDialog({ reservation, onClose }: { reservation: Reservation; onClose: () => void }) {
   const { t, lang, hotels, updateReservation } = useApp()
-  const [hotelId, setHotelId] = useState(reservation.hotelId ?? '')
+  const [stays, setStays] = useState(() => getStays(reservation))
   const [amount, setAmount] = useState(reservation.finalAmount?.toString() ?? '')
   const [limit, setLimit] = useState(reservation.paymentLimit ?? addDays(new Date(), 7))
   const [voucher, setVoucher] = useState<AttachedFile | undefined>(reservation.voucherFile)
   const [error, setError] = useState<string | null>(null)
 
-  const cityHotels = hotels.filter((h) => h.city === reservation.city)
-  const hotelItems = cityHotels.map((h) => ({ value: h.id, label: `${h.nameEs} · ${h.stars}★ · ${formatEUR(h.feeRate, lang)}/RN` }))
-
   function handleSave(e: React.FormEvent) {
     e.preventDefault()
     const value = Number(amount)
-    if (!hotelId) return setError(t.errHotel)
+    if (stays.some((s) => !s.hotelId)) return setError(t.errHotel)
     if (!amount || Number.isNaN(value) || value <= 0) return setError(t.errAmount)
     if (!limit) return setError(t.errLimit)
     updateReservation(reservation.id, {
       status: 'confirmed',
-      hotelId,
+      stays,
+      hotelId: stays[0].hotelId,
       finalAmount: Math.round(value * 100) / 100,
       paymentLimit: limit,
       voucherFile: voucher,
@@ -42,7 +41,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t.confirmTitle}</DialogTitle>
           <DialogDescription>
@@ -51,21 +50,47 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSave} className="flex flex-col gap-4" noValidate>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="confirm-hotel">{t.assignHotel} *</Label>
-            <Select items={hotelItems} value={hotelId || null} onValueChange={(v) => v && setHotelId(v as string)}>
-              <SelectTrigger id="confirm-hotel" className="w-full">
-                <SelectValue placeholder="—" />
-              </SelectTrigger>
-              <SelectContent>
-                {hotelItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium">{t.assignHotel} *</legend>
+            {stays.map((stay, index) => {
+              const hotelItems = hotels
+                .filter((h) => h.city === stay.city)
+                .sort((a, b) => Number(b.stars === stay.stars) - Number(a.stars === stay.stars))
+                .map((h) => ({ value: h.id, label: `${h.nameEs} · ${h.stars}★ · ${formatEUR(h.feeRate, lang)}/RN` }))
+              const id = `confirm-hotel-${stay.id}`
+              return (
+                <div key={stay.id} className="flex flex-col gap-1 rounded-lg border bg-muted/40 p-2.5">
+                  <Label htmlFor={id} className="flex flex-wrap items-baseline gap-x-2 text-xs">
+                    <span className="font-mono text-primary">{index + 1}</span>
+                    {CITY_LABELS[stay.city][lang]}
+                    <span className="font-mono font-normal text-muted-foreground">
+                      {formatShortDate(stay.checkIn, lang)} → {formatShortDate(stay.checkOut, lang)} ·{' '}
+                      {nightsBetween(stay.checkIn, stay.checkOut)}
+                      {t.nightsUnit} · {stay.stars}★
+                    </span>
+                  </Label>
+                  <Select
+                    items={hotelItems}
+                    value={stay.hotelId ?? null}
+                    onValueChange={(v) =>
+                      v && setStays((prev) => prev.map((s) => (s.id === stay.id ? { ...s, hotelId: v as string } : s)))
+                    }
+                  >
+                    <SelectTrigger id={id} className="w-full bg-background">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hotelItems.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )
+            })}
+          </fieldset>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="final-amount">{t.finalAmount} *</Label>

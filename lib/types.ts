@@ -22,6 +22,15 @@ export interface RoomCounts {
   triple: number
 }
 
+export interface Stay {
+  id: string
+  city: City
+  checkIn: string
+  checkOut: string
+  stars: number
+  hotelId?: string
+}
+
 export interface Reservation {
   id: string
   agencyId: string
@@ -31,6 +40,7 @@ export interface Reservation {
   city: City
   hotelId?: string
   preferredStars?: number
+  stays?: Stay[]
   rooms: RoomCounts
   breakfast: boolean
   roomingList?: AttachedFile

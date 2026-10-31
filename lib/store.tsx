@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { roomNights } from './format'
+import { getStays, nightsBetween, totalRooms } from './format'
 import { dictionaries, type Dict } from './i18n'
 import { AGENCIES, CURRENT_AGENCY_ID, SEED_HOTELS, createSeedReservations } from './seed-data'
 import type { Agency, Hotel, Lang, Reservation, Role } from './types'
@@ -60,7 +60,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [hotelById],
   )
 
-  const feeFor = useCallback((reservation: Reservation) => roomNights(reservation) * feeRateFor(reservation), [feeRateFor])
+  const feeFor = useCallback(
+    (reservation: Reservation) =>
+      getStays(reservation).reduce(
+        (sum, stay) =>
+          sum +
+          totalRooms(reservation.rooms) *
+            nightsBetween(stay.checkIn, stay.checkOut) *
+            (hotelById(stay.hotelId)?.feeRate ?? DEFAULT_FEE_RATE),
+        0,
+      ),
+    [hotelById],
+  )
 
   const addReservation = useCallback((input: NewReservationInput) => {
     const now = new Date()

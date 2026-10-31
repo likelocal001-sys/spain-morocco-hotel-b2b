@@ -8,13 +8,13 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { CITIES, CITY_LABELS, REQUEST_TAGS, REQUEST_TAG_LABELS } from '@/lib/i18n'
+import { StayEditor, createStayDraft, type StayDraft } from '@/components/client/stay-editor'
+import { REQUEST_TAGS, REQUEST_TAG_LABELS } from '@/lib/i18n'
 import { addDays, formatFileSize, nightsBetween } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import type { AttachedFile, City, RequestTag, RoomCounts } from '@/lib/types'
+import type { AttachedFile, RequestTag, RoomCounts, Stay } from '@/lib/types'
 
 const ROOM_TYPES: { key: keyof RoomCounts; label: string; pax: string }[] = [
   { key: 'single', label: 'Single', pax: '1 pax' },
@@ -77,14 +77,9 @@ function RoomStepper({
 }
 
 function initialForm() {
-  const today = new Date()
   return {
     groupName: '',
-    checkIn: addDays(today, 30),
-    checkOut: addDays(today, 32),
-    city: 'Madrid' as City,
-    hotelId: 'none',
-    preferredStars: '4',
+    stays: [createStayDraft(addDays(new Date(), 30))] as StayDraft[],
     rooms: { single: 0, twin: 10, triple: 0 } as RoomCounts,
     breakfast: true,
     requestTags: [] as RequestTag[],
@@ -94,7 +89,7 @@ function initialForm() {
 }
 
 export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { t, lang, hotels, addReservation } = useApp()
+  const { t, lang, addReservation } = useApp()
   const [form, setForm] = useState(initialForm)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -102,14 +97,8 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
   const update = <K extends keyof ReturnType<typeof initialForm>>(key: K, value: ReturnType<typeof initialForm>[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
-  const cityHotels = hotels.filter((h) => h.city === form.city)
-  const nights = nightsBetween(form.checkIn, form.checkOut)
+  const nights = form.stays.reduce((sum, s) => sum + nightsBetween(s.checkIn, s.checkOut), 0)
   const total = form.rooms.single + form.rooms.twin + form.rooms.triple
-
-  const hotelItems = [
-    { value: 'none', label: t.hotelNone },
-    ...cityHotels.map((h) => ({ value: h.id, label: `${h.nameEs} · ${h.stars}★` })),
-  ]
 
   function handleFile(file: File | undefined) {
     if (!file) return
@@ -125,16 +114,27 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.groupName.trim()) return setError(t.errGroup)
-    if (nights <= 0) return setError(t.errDates)
+    if (form.stays.some((s) => nightsBetween(s.checkIn, s.checkOut) <= 0)) return setError(t.errDates)
+    if (form.stays.some((s, i) => i > 0 && s.checkIn < form.stays[i - 1].checkOut)) return setError(t.errStayOrder)
     if (total <= 0) return setError(t.errRooms)
 
+    const stays: Stay[] = form.stays.map((s) => ({
+      id: s.id,
+      city: s.city,
+      checkIn: s.checkIn,
+      checkOut: s.checkOut,
+      stars: Number(s.stars),
+      hotelId: s.hotelId === 'none' ? undefined : s.hotelId,
+    }))
+    const first = stays[0]
     const created = addReservation({
       groupName: form.groupName.trim(),
-      checkIn: form.checkIn,
-      checkOut: form.checkOut,
-      city: form.city,
-      hotelId: form.hotelId === 'none' ? undefined : form.hotelId,
-      preferredStars: form.hotelId === 'none' ? Number(form.preferredStars) : undefined,
+      checkIn: first.checkIn,
+      checkOut: stays[stays.length - 1].checkOut,
+      city: first.city,
+      hotelId: first.hotelId,
+      preferredStars: first.stars,
+      stays,
       rooms: form.rooms,
       breakfast: form.breakfast,
       roomingList: form.roomingList,
@@ -167,88 +167,7 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="check-in">{t.checkIn} *</Label>
-              <Input
-                id="check-in"
-                type="date"
-                value={form.checkIn}
-                onChange={(e) => update('checkIn', e.target.value)}
-                className="font-mono"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="check-out">{t.checkOut} *</Label>
-              <Input
-                id="check-out"
-                type="date"
-                min={form.checkIn}
-                value={form.checkOut}
-                onChange={(e) => update('checkOut', e.target.value)}
-                className="font-mono"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="city">{t.city}</Label>
-              <Select
-                items={CITIES.map((c) => ({ value: c, label: CITY_LABELS[c][lang] }))}
-                value={form.city}
-                onValueChange={(v) => {
-                  if (!v) return
-                  setForm((prev) => ({ ...prev, city: v as City, hotelId: 'none' }))
-                }}
-              >
-                <SelectTrigger id="city" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CITIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {CITY_LABELS[c][lang]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="stars">{t.preferredStars}</Label>
-              <Select
-                items={['3', '4', '5'].map((s) => ({ value: s, label: `${s}${t.starsSuffix}` }))}
-                value={form.preferredStars}
-                onValueChange={(v) => v && update('preferredStars', v as string)}
-                disabled={form.hotelId !== 'none'}
-              >
-                <SelectTrigger id="stars" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {['3', '4', '5'].map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                      {t.starsSuffix}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="hotel">{t.hotel}</Label>
-            <Select items={hotelItems} value={form.hotelId} onValueChange={(v) => v && update('hotelId', v as string)}>
-              <SelectTrigger id="hotel" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {hotelItems.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <StayEditor stays={form.stays} onChange={(stays) => update('stays', stays)} />
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 flex w-full items-center justify-between text-sm font-medium">

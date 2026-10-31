@@ -8,12 +8,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CITY_LABELS, REQUEST_TAG_LABELS } from '@/lib/i18n'
-import { formatDate, nightsBetween, totalRooms } from '@/lib/format'
-import type { Hotel, Reservation } from '@/lib/types'
+import { formatDate, getStays, nightsBetween, totalRooms } from '@/lib/format'
+import type { Hotel, Reservation, Stay } from '@/lib/types'
 import { useApp } from '@/lib/store'
 
-function buildSpanishEmail(r: Reservation, hotel?: Hotel) {
-  const nights = nightsBetween(r.checkIn, r.checkOut)
+function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
+  const nights = nightsBetween(stay.checkIn, stay.checkOut)
   const roomParts = [
     r.rooms.single && `${r.rooms.single} individual${r.rooms.single > 1 ? 'es' : ''}`,
     r.rooms.twin && `${r.rooms.twin} doble${r.rooms.twin > 1 ? 's' : ''} (twin)`,
@@ -22,7 +22,7 @@ function buildSpanishEmail(r: Reservation, hotel?: Hotel) {
   const requests = r.requestTags.map((tag) => REQUEST_TAG_LABELS[tag].es)
   const hasKorean = /[\u3131-\uD79D]/.test(r.requests)
 
-  const subject = `Solicitud de reserva de grupo – ${r.id} (${formatDate(r.checkIn, 'es')})`
+  const subject = `Solicitud de reserva de grupo – ${r.id} (${formatDate(stay.checkIn, 'es')})`
   const body = [
     `Estimado equipo comercial${hotel ? ` de ${hotel.nameEs}` : ''}:`,
     '',
@@ -30,11 +30,11 @@ function buildSpanishEmail(r: Reservation, hotel?: Hotel) {
     '',
     `• Referencia: ${r.id}`,
     `• Grupo: ${r.groupName}`,
-    `• Ciudad: ${CITY_LABELS[r.city].es}`,
-    `• Fechas: entrada ${formatDate(r.checkIn, 'es')} – salida ${formatDate(r.checkOut, 'es')} (${nights} noche${nights === 1 ? '' : 's'})`,
+    `• Ciudad: ${CITY_LABELS[stay.city].es}`,
+    `• Fechas: entrada ${formatDate(stay.checkIn, 'es')} – salida ${formatDate(stay.checkOut, 'es')} (${nights} noche${nights === 1 ? '' : 's'})`,
     `• Habitaciones: ${roomParts.join(', ')} — total ${totalRooms(r.rooms)}`,
     `• Régimen: ${r.breakfast ? 'alojamiento y desayuno' : 'solo alojamiento'}`,
-    ...(!hotel && r.preferredStars ? [`• Categoría deseada: ${r.preferredStars} estrellas`] : []),
+    ...(!hotel ? [`• Categoría deseada: ${stay.stars} estrellas`] : []),
     ...(requests.length ? [`• Peticiones especiales: ${requests.join('; ')}`] : []),
     ...(r.requests ? [`• Observaciones${hasKorean ? ' (texto original del cliente)' : ''}: ${r.requests}`] : []),
     ...(r.roomingList ? ['• Adjuntamos la rooming list del grupo.'] : []),
@@ -52,9 +52,17 @@ function buildSpanishEmail(r: Reservation, hotel?: Hotel) {
 }
 
 export function SpanishEmailDialog({ reservation, onClose }: { reservation: Reservation; onClose: () => void }) {
-  const { t, hotelById } = useApp()
-  const hotel = hotelById(reservation.hotelId)
-  const [email, setEmail] = useState(() => buildSpanishEmail(reservation, hotel))
+  const { t, lang, hotelById } = useApp()
+  const stays = getStays(reservation)
+  const [stayIndex, setStayIndex] = useState(0)
+  const stay = stays[stayIndex]
+  const hotel = hotelById(stay.hotelId)
+  const [email, setEmail] = useState(() => buildSpanishEmail(reservation, stay, hotel))
+
+  function selectStay(index: number) {
+    setStayIndex(index)
+    setEmail(buildSpanishEmail(reservation, stays[index], hotelById(stays[index].hotelId)))
+  }
 
   const recipients = (hotel?.contacts ?? []).map((c) => c.email).filter(Boolean)
   const mailto = `mailto:${recipients.join(',')}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
@@ -71,6 +79,23 @@ export function SpanishEmailDialog({ reservation, onClose }: { reservation: Rese
           <DialogTitle>{t.emailTitle}</DialogTitle>
           <DialogDescription>{t.emailDesc}</DialogDescription>
         </DialogHeader>
+        {stays.length > 1 && (
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label={t.itinerary}>
+            {stays.map((s, index) => (
+              <Button
+                key={s.id}
+                type="button"
+                size="sm"
+                variant={index === stayIndex ? 'default' : 'outline'}
+                aria-pressed={index === stayIndex}
+                onClick={() => selectStay(index)}
+              >
+                <span className="font-mono">{index + 1}</span>
+                {hotelById(s.hotelId)?.nameEs ?? `${CITY_LABELS[s.city][lang]} · ${s.stars}★`}
+              </Button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email-to" className="text-xs text-muted-foreground">
             Para

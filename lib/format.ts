@@ -1,4 +1,4 @@
-import type { Lang, Reservation, RoomCounts } from './types'
+import type { Lang, Reservation, RoomCounts, Stay } from './types'
 
 export function toISODate(date: Date) {
   const y = date.getFullYear()
@@ -64,8 +64,22 @@ export function totalRooms(rooms: RoomCounts) {
   return rooms.single + rooms.twin + rooms.triple
 }
 
+export function getStays(r: Reservation): Stay[] {
+  if (r.stays?.length) return r.stays
+  return [
+    {
+      id: `${r.id}-1`,
+      city: r.city,
+      checkIn: r.checkIn,
+      checkOut: r.checkOut,
+      stars: r.preferredStars ?? 4,
+      hotelId: r.hotelId,
+    },
+  ]
+}
+
 export function roomNights(r: Reservation) {
-  return totalRooms(r.rooms) * nightsBetween(r.checkIn, r.checkOut)
+  return getStays(r).reduce((sum, s) => sum + totalRooms(r.rooms) * nightsBetween(s.checkIn, s.checkOut), 0)
 }
 
 export type DeadlineLevel = 'none' | 'paid' | 'ok' | 'warn' | 'critical' | 'expired'

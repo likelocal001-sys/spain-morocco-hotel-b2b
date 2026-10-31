@@ -2,7 +2,7 @@
 
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { CITY_LABELS } from '@/lib/i18n'
-import { formatDate, formatShortDate, getDeadline, nightsBetween, totalRooms } from '@/lib/format'
+import { formatDate, formatShortDate, getDeadline, getStays, nightsBetween, totalRooms } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
@@ -96,16 +96,25 @@ export function StayCell({ reservation }: { reservation: Reservation }) {
 
 export function HotelCell({ reservation }: { reservation: Reservation }) {
   const { t, lang, hotelById } = useApp()
-  const hotel = hotelById(reservation.hotelId)
+  const stays = getStays(reservation)
   return (
-    <div className="flex min-w-0 flex-col">
-      <span className="text-xs font-medium">{CITY_LABELS[reservation.city][lang]}</span>
-      <span className="max-w-[180px] truncate text-[11px] text-muted-foreground">
-        {hotel
-          ? hotel.nameEs
-          : `${t.unassigned}${reservation.preferredStars ? ` · ${reservation.preferredStars}★` : ''}`}
-      </span>
-    </div>
+    <ul className="flex min-w-0 flex-col gap-0.5">
+      {stays.map((stay) => {
+        const hotel = hotelById(stay.hotelId)
+        return (
+          <li key={stay.id} className="flex min-w-0 items-baseline gap-1.5">
+            <span className="shrink-0 text-xs font-medium">{CITY_LABELS[stay.city][lang]}</span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {nightsBetween(stay.checkIn, stay.checkOut)}
+              {t.nightsUnit}
+            </span>
+            <span className="max-w-[160px] truncate text-[11px] text-muted-foreground">
+              {hotel ? hotel.nameEs : `${t.unassigned} · ${stay.stars}★`}
+            </span>
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 

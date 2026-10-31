@@ -4,7 +4,7 @@ import { Download, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CITY_LABELS, REQUEST_TAG_LABELS } from '@/lib/i18n'
-import { formatDate, formatEUR, nightsBetween, toISODate, totalRooms } from '@/lib/format'
+import { formatDate, formatEUR, getStays, nightsBetween, toISODate, totalRooms } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import type { Reservation } from '@/lib/types'
 
@@ -57,8 +57,8 @@ export function DocumentDialog({
 }) {
   const { t, lang, hotelById, agencyName } = useApp()
   if (!reservation) return null
-  const hotel = hotelById(reservation.hotelId)
-  const nights = nightsBetween(reservation.checkIn, reservation.checkOut)
+  const stays = getStays(reservation)
+  const nights = stays.reduce((sum, s) => sum + nightsBetween(s.checkIn, s.checkOut), 0)
   const { single, twin, triple } = reservation.rooms
 
   return (
@@ -78,10 +78,26 @@ export function DocumentDialog({
             <DocRow label={t.reference} value={<span className="font-mono">{reservation.id}</span>} />
             <DocRow label={t.groupName} value={reservation.groupName} />
             <DocRow
-              label={t.hotel}
-              value={hotel ? `${hotel.nameEs} · ${hotel.stars}★` : t.unassigned}
+              label={t.itinerary}
+              value={
+                <ol className="flex flex-col gap-1">
+                  {stays.map((stay, index) => {
+                    const hotel = hotelById(stay.hotelId)
+                    return (
+                      <li key={stay.id}>
+                        <span className="font-mono text-muted-foreground">{index + 1}. </span>
+                        {CITY_LABELS[stay.city][lang]} · {hotel ? `${hotel.nameEs} · ${hotel.stars}★` : `${t.unassigned} · ${stay.stars}★`}
+                        <span className="block font-mono text-xs text-muted-foreground">
+                          {formatDate(stay.checkIn, lang)} – {formatDate(stay.checkOut, lang)} (
+                          {nightsBetween(stay.checkIn, stay.checkOut)}
+                          {t.nightsUnit})
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ol>
+              }
             />
-            <DocRow label={t.city} value={CITY_LABELS[reservation.city][lang]} />
             <DocRow
               label={`${t.checkIn} / ${t.checkOut}`}
               value={`${formatDate(reservation.checkIn, lang)} – ${formatDate(reservation.checkOut, lang)} (${nights}${t.nightsUnit})`}

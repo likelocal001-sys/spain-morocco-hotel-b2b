@@ -9,14 +9,27 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cityLabel } from '@/lib/i18n'
-import { addDays, formatEUR, formatFileSize, formatShortDate, getStays, nightsBetween, roomNights } from '@/lib/format'
+import {
+  addDays,
+  formatEUR,
+  formatFileSize,
+  formatShortDate,
+  getStays,
+  negotiatedTotal,
+  nightsBetween,
+  roomNights,
+} from '@/lib/format'
 import { useApp } from '@/lib/store'
 import type { AttachedFile, Reservation } from '@/lib/types'
 
 export function ConfirmDialog({ reservation, onClose }: { reservation: Reservation; onClose: () => void }) {
   const { t, lang, hotels, updateReservation } = useApp()
   const [stays, setStays] = useState(() => getStays(reservation))
-  const [amount, setAmount] = useState(reservation.finalAmount?.toString() ?? '')
+  const [amount, setAmount] = useState(() => {
+    if (reservation.finalAmount) return reservation.finalAmount.toString()
+    const total = negotiatedTotal(reservation)
+    return total > 0 ? (Math.round(total * 100) / 100).toString() : ''
+  })
   const [limit, setLimit] = useState(reservation.paymentLimit ?? addDays(new Date(), 7))
   const [voucher, setVoucher] = useState<AttachedFile | undefined>(reservation.voucherFile)
   const [error, setError] = useState<string | null>(null)
@@ -104,7 +117,11 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
                 onChange={(e) => setAmount(e.target.value)}
                 className="font-mono"
                 placeholder="0.00"
+                aria-describedby="final-amount-hint"
               />
+              <p id="final-amount-hint" className="text-[11px] text-muted-foreground">
+                {t.finalAmountHint}
+              </p>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="payment-limit">{t.paymentLimit} *</Label>

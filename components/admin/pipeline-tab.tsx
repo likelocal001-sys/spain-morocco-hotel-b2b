@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatEUR, getDeadline, negotiationProgress, unseenRevisions } from '@/lib/format'
+import { blockProgress, formatEUR, getDeadline, negotiationProgress, unseenRevisions } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
@@ -206,12 +206,20 @@ export function PipelineTab() {
                           {t.startNegotiation}
                         </Button>
                       )}
-                      {r.status === 'in_progress' && (
-                        <Button size="xs" onClick={() => setConfirming(r)}>
-                          <BadgeCheck aria-hidden="true" />
-                          {t.confirmAction}
-                        </Button>
-                      )}
+                      {r.status === 'in_progress' &&
+                        (blockProgress(r).all ? (
+                          <Button size="xs" onClick={() => setConfirming(r)}>
+                            <BadgeCheck aria-hidden="true" />
+                            {t.finalComplete}
+                          </Button>
+                        ) : (
+                          <span
+                            className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground tabular-nums"
+                            title={t.allBlocksHint}
+                          >
+                            {t.blocksStatus} {blockProgress(r).secured}/{blockProgress(r).total}
+                          </span>
+                        ))}
                       {r.status === 'confirmed' && !r.paid && (
                         <Button
                           size="xs"

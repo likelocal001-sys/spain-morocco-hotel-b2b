@@ -1,6 +1,7 @@
 'use client'
 
-import { BadgeCheck, Mail, Phone } from 'lucide-react'
+import { useState } from 'react'
+import { BadgeCheck, Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Mail, Phone } from 'lucide-react'
 import { StatusBadge } from '@/components/reservation-cells'
 import { StayRequestsBox } from '@/components/stay-request-tags'
 import { Button } from '@/components/ui/button'
@@ -11,9 +12,11 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import {
+  blockProgress,
   formatEUR,
   formatShortDate,
   getStays,
+  isBlockSecured,
   negotiationProgress,
   nightsBetween,
   totalRooms,
@@ -58,10 +61,23 @@ function toggle<T>(list: T[], item: T, on: boolean) {
 export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmail }: Props) {
   const { t, lang, reservations, agencyName, updateReservation } = useApp()
   const r = reservations.find((x) => x.id === reservationId)
+  const [openIds, setOpenIds] = useState<Set<string>>(() =>
+    r ? new Set(getStays(r).filter((s) => !isBlockSecured(r, s.id)).map((s) => s.id)) : new Set(),
+  )
   if (!r) return null
 
   const stays = getStays(r)
   const progress = negotiationProgress(r)
+  const blocks = blockProgress(r)
+
+  function toggleStay(stayId: string) {
+    setOpenIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(stayId)) next.delete(stayId)
+      else next.add(stayId)
+      return next
+    })
+  }
   const rooms = totalRooms(r.rooms)
   const nights = stays.reduce((sum, s) => sum + nightsBetween(s.checkIn, s.checkOut), 0)
 
@@ -162,13 +178,37 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
         </section>
 
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold">{t.stayNegotiation}</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              {t.stayNegotiation}
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 font-mono text-[11px] font-normal tabular-nums',
+                  blocks.all ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {t.blocksStatus} {blocks.secured}/{blocks.total}
+              </span>
+            </h3>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="xs" onClick={() => setOpenIds(new Set(stays.map((s) => s.id)))}>
+                <ChevronsUpDown aria-hidden="true" />
+                {t.expandAll}
+              </Button>
+              <Button variant="ghost" size="xs" onClick={() => setOpenIds(new Set())}>
+                <ChevronsDownUp aria-hidden="true" />
+                {t.collapseAll}
+              </Button>
+            </div>
+          </div>
           <ol className="flex flex-col gap-3">
             {stays.map((stay, index) => (
               <StayCard
                 key={stay.id}
                 index={index}
                 stay={stay}
+                open={openIds.has(stay.id)}
+                onToggle={() => toggleStay(stay.id)}
                 rooms={r.rooms}
                 negotiation={r.negotiation?.[stay.id] ?? { steps: [] }}
                 onPatch={(changes, startsWork) => patchStay(stay.id, changes, startsWork)}
@@ -188,12 +228,17 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
               {t.spanishEmail}
             </Button>
           )}
-          {(r.status === 'pending' || r.status === 'in_progress') && (
-            <Button onClick={() => onConfirm(r)}>
-              <BadgeCheck aria-hidden="true" />
-              {t.confirmAction}
-            </Button>
-          )}
+          {(r.status === 'pending' || r.status === 'in_progress') &&
+            (blocks.all ? (
+              <Button onClick={() => onConfirm(r)}>
+                <BadgeCheck aria-hidden="true" />
+                {t.finalComplete}
+              </Button>
+            ) : (
+              <p className="flex items-center justify-center rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground sm:order-first sm:mr-auto">
+                {t.allBlocksHint} ({blocks.secured}/{blocks.total})
+              </p>
+            ))}
         </div>
       </DialogContent>
     </Dialog>
@@ -203,6 +248,8 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
 function StayCard({
   index,
   stay,
+  open,
+  onToggle,
   rooms,
   negotiation,
   onPatch,
@@ -210,6 +257,8 @@ function StayCard({
 }: {
   index: number
   stay: Stay
+  open: boolean
+  onToggle: () => void
   rooms: RoomCounts
   negotiation: StayNegotiation
   onPatch: (changes: Partial<StayNegotiation>, startsWork?: boolean) => void
@@ -228,30 +277,59 @@ function StayCard({
   const perNight = ROOM_TYPES.reduce((sum, { key }) => sum + (rateFor(key) ?? 0) * rooms[key], 0)
   const estimate = perNight > 0 ? perNight * nights : undefined
   const fieldId = `neg-${stay.id}`
+  const secured = negotiation.steps.includes('optionHeld')
 
   return (
-    <li className="flex flex-col gap-3 rounded-xl border p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="flex size-6 items-center justify-center rounded-full bg-primary font-mono text-xs text-primary-foreground">
-            {index + 1}
+    <li
+      className={cn(
+        'flex flex-col rounded-xl border',
+        secured ? 'border-success/40 bg-success/5' : 'bg-card',
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`${fieldId}-body`}
+        className="flex flex-wrap items-center justify-between gap-2 rounded-xl p-4 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              'flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-xs',
+              secured ? 'bg-success text-white' : 'bg-primary text-primary-foreground',
+            )}
+          >
+            {secured ? <Check className="size-3.5" aria-hidden="true" /> : index + 1}
           </span>
           <span className="text-sm font-semibold">{cityLabel(stay.city, lang)}</span>
           <span className="font-mono text-xs text-muted-foreground">
             {formatShortDate(stay.checkIn, lang)} – {formatShortDate(stay.checkOut, lang)} · {nights}
             {t.nightsUnit} · {stay.stars}★
           </span>
-        </div>
-        <span
-          className={cn(
-            'rounded-full px-2 py-0.5 font-mono text-[11px] tabular-nums',
-            done === NEGOTIATION_STEPS.length ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground',
-          )}
-        >
-          {done}/{NEGOTIATION_STEPS.length}
+          <span className="truncate text-xs font-medium">{hotel ? hotel.nameEs : t.hotelNone}</span>
         </span>
-      </div>
+        <span className="flex items-center gap-2">
+          <span
+            className={cn(
+              'rounded-full px-2 py-0.5 text-[11px] font-medium',
+              secured ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning-foreground',
+            )}
+          >
+            {secured ? t.blockSecured : t.blockPending}
+          </span>
+          <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+            {done}/{NEGOTIATION_STEPS.length}
+          </span>
+          <ChevronDown
+            className={cn('size-4 text-muted-foreground transition-transform', open && 'rotate-180')}
+            aria-hidden="true"
+          />
+        </span>
+      </button>
 
+      {open && (
+      <div id={`${fieldId}-body`} className="flex flex-col gap-3 px-4 pb-4">
       <StayRequestsBox tags={stay.requestTags ?? []} />
 
       <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
@@ -397,6 +475,8 @@ function StayCard({
           </div>
         </div>
       </div>
+      </div>
+      )}
     </li>
   )
 }

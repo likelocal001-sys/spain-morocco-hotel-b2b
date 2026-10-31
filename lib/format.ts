@@ -105,6 +105,29 @@ export function negotiationProgress(r: Reservation) {
   return { done, total, percent: Math.round((done / total) * 100) }
 }
 
+export function isBlockSecured(r: Reservation, stayId: string) {
+  return r.negotiation?.[stayId]?.steps.includes('optionHeld') ?? false
+}
+
+export function blockProgress(r: Reservation) {
+  const stays = getStays(r)
+  const secured = stays.filter((s) => isBlockSecured(r, s.id)).length
+  return { secured, total: stays.length, all: secured === stays.length }
+}
+
+const RATE_TYPES = ['single', 'twin', 'triple'] as const
+
+export function stayEstimate(r: Reservation, stay: Stay) {
+  const n = r.negotiation?.[stay.id]
+  if (!n) return 0
+  const perNight = RATE_TYPES.reduce((sum, k) => sum + (n.rates?.[k] ?? n.rate ?? 0) * r.rooms[k], 0)
+  return perNight * nightsBetween(stay.checkIn, stay.checkOut)
+}
+
+export function negotiatedTotal(r: Reservation) {
+  return getStays(r).reduce((sum, s) => sum + stayEstimate(r, s), 0)
+}
+
 export function roomNights(r: Reservation) {
   return getStays(r).reduce((sum, s) => sum + totalRooms(r.rooms) * nightsBetween(s.checkIn, s.checkOut), 0)
 }

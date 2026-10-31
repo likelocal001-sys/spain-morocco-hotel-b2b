@@ -9,6 +9,7 @@ export type KnownCity =
   | 'Valencia'
   | 'Toledo'
   | 'Malaga'
+  | 'Zaragoza'
   | 'Lisboa'
   | 'Fatima'
   | 'Porto'

@@ -2,6 +2,7 @@
 
 import { BadgeCheck, Mail, Phone } from 'lucide-react'
 import { StatusBadge } from '@/components/reservation-cells'
+import { StayRequestsBox } from '@/components/stay-request-tags'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -102,6 +103,13 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
         </DialogHeader>
 
         <RevisionPanel reservation={r} />
+
+        {r.requests.trim() && (
+          <div className="flex flex-col gap-1 rounded-lg border border-warning/60 bg-warning/10 px-3 py-2.5">
+            <span className="text-xs font-semibold text-warning-foreground">{t.agencyFreeRequests}</span>
+            <p className="text-sm whitespace-pre-wrap">{r.requests}</p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-xs">
@@ -243,6 +251,8 @@ function StayCard({
           {done}/{NEGOTIATION_STEPS.length}
         </span>
       </div>
+
+      <StayRequestsBox tags={stay.requestTags ?? []} />
 
       <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
         <div className="flex flex-col gap-3">

@@ -1,5 +1,6 @@
 'use client'
 
+import { RequestTagChips } from '@/components/stay-request-tags'
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { cityLabel } from '@/lib/i18n'
 import { formatDate, formatShortDate, getDeadline, getStays, nightsBetween, totalRooms } from '@/lib/format'
@@ -94,7 +95,13 @@ export function StayCell({ reservation }: { reservation: Reservation }) {
   )
 }
 
-export function HotelCell({ reservation }: { reservation: Reservation }) {
+export function HotelCell({
+  reservation,
+  showRequests = false,
+}: {
+  reservation: Reservation
+  showRequests?: boolean
+}) {
   const { t, lang, hotelById } = useApp()
   const stays = getStays(reservation)
   return (
@@ -102,15 +109,18 @@ export function HotelCell({ reservation }: { reservation: Reservation }) {
       {stays.map((stay) => {
         const hotel = hotelById(stay.hotelId)
         return (
-          <li key={stay.id} className="flex min-w-0 items-baseline gap-1.5">
-            <span className="shrink-0 text-xs font-medium">{cityLabel(stay.city, lang)}</span>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {nightsBetween(stay.checkIn, stay.checkOut)}
-              {t.nightsUnit}
-            </span>
-            <span className="max-w-[160px] truncate text-[11px] text-muted-foreground">
-              {hotel ? hotel.nameEs : `${t.unassigned} · ${stay.stars}★`}
-            </span>
+          <li key={stay.id} className="flex min-w-0 flex-col gap-0.5 py-0.5">
+            <div className="flex min-w-0 items-baseline gap-1.5">
+              <span className="shrink-0 text-xs font-medium">{cityLabel(stay.city, lang)}</span>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {nightsBetween(stay.checkIn, stay.checkOut)}
+                {t.nightsUnit}
+              </span>
+              <span className="max-w-[160px] truncate text-[11px] text-muted-foreground">
+                {hotel ? hotel.nameEs : `${t.unassigned} · ${stay.stars}★`}
+              </span>
+            </div>
+            {showRequests && <RequestTagChips tags={stay.requestTags ?? []} compact />}
           </li>
         )
       })}

@@ -178,7 +178,7 @@ export function PipelineTab() {
                     <StayCell reservation={r} />
                   </TableCell>
                   <TableCell>
-                    <HotelCell reservation={r} />
+                    <HotelCell reservation={r} showRequests />
                   </TableCell>
                   <TableCell>
                     <RoomsCell reservation={r} />

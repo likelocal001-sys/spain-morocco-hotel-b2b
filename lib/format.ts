@@ -73,8 +73,9 @@ export function getStays(r: Reservation): Stay[] {
       checkIn: r.checkIn,
       checkOut: r.checkOut,
       stars: r.preferredStars ?? 4,
-      hotelId: r.hotelId,
-    },
+  hotelId: r.hotelId,
+  requestTags: r.requestTags,
+  },
   ]
 }
 

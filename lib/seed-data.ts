@@ -85,6 +85,90 @@ export const SEED_HOTELS: Hotel[] = [
     busParking: true,
     notes: '알함브라 야경 객실 지정 시 +€15. 2026.03 Twin €98 BB.',
   },
+  {
+    id: 'h-7',
+    nameEs: 'Hotel Turia Ciudad de las Artes',
+    city: 'Valencia',
+    stars: 4,
+    contacts: [
+      { id: 'c-7-1', name: 'Marta Soler', email: 'grupos@turiaartes.es', phone: '+34 963 51 20 40' },
+    ],
+    feeRate: 3,
+    busParking: true,
+    notes: '[테스트] 예술과학도시 도보 10분. 2026.04 Twin €95 BB.',
+  },
+  {
+    id: 'h-8',
+    nameEs: 'Hotel Puerta de Bisagra',
+    city: 'Toledo',
+    stars: 3,
+    contacts: [
+      { id: 'c-8-1', name: 'Pablo Herrera', email: 'reservas@puertabisagra.es', phone: '+34 925 28 33 10' },
+    ],
+    feeRate: 2.5,
+    busParking: true,
+    notes: '[테스트] 구시가지 입구, 버스 정차 가능. 2026.03 Twin €78 BB.',
+  },
+  {
+    id: 'h-9',
+    nameEs: 'Hotel Málaga Puerto Centro',
+    city: 'Malaga',
+    stars: 4,
+    contacts: [
+      { id: 'c-9-1', name: 'Rocío Jiménez', email: 'groups@malagapuerto.es', phone: '+34 952 06 44 80' },
+    ],
+    feeRate: 3,
+    busParking: false,
+    notes: '[테스트] 버스는 Paseo del Parque 하차. 2026.05 Twin €112 BB.',
+  },
+  {
+    id: 'h-10',
+    nameEs: 'Hotel Pilar Plaza Zaragoza',
+    city: 'Zaragoza',
+    stars: 4,
+    contacts: [
+      { id: 'c-10-1', name: 'Sergio Lázaro', email: 'grupos@pilarplaza.es', phone: '+34 976 20 15 60' },
+    ],
+    feeRate: 3,
+    busParking: true,
+    notes: '[테스트] 필라르 성당 도보 5분. 2026.04 Twin €88 BB.',
+  },
+  {
+    id: 'h-11',
+    nameEs: 'Hotel Avenida Liberdade Lisboa',
+    city: 'Lisboa',
+    stars: 4,
+    contacts: [
+      { id: 'c-11-1', name: 'Inês Carvalho', email: 'grupos@liberdadelisboa.pt', phone: '+351 213 40 55 00' },
+    ],
+    feeRate: 3,
+    busParking: true,
+    notes: '[테스트] 리베르다드 대로변. 2026.04 Twin €120 BB.',
+  },
+  {
+    id: 'h-12',
+    nameEs: 'Hotel Santuário Fátima',
+    city: 'Fatima',
+    stars: 3,
+    contacts: [
+      { id: 'c-12-1', name: 'João Pereira', email: 'reservas@santuariofatima.pt', phone: '+351 249 53 10 20' },
+    ],
+    feeRate: 2.5,
+    busParking: true,
+    notes: '[테스트] 성지 도보 3분, 순례 그룹 다수. 2026.05 Twin €70 BB.',
+  },
+  {
+    id: 'h-13',
+    nameEs: 'Hotel Ribeira Douro Porto',
+    city: 'Porto',
+    stars: 5,
+    contacts: [
+      { id: 'c-13-1', name: 'Beatriz Sousa', email: 'sales@ribeiradouro.pt', phone: '+351 222 08 70 30' },
+    ],
+    feeRate: 4,
+    busParking: false,
+    notes: '[테스트] 히베이라 강변. 버스는 Praça da Ribeira 하차. 2026.05 Twin €150 BB.',
+  },
 ]
 
 export function createSeedReservations(today = new Date()): Reservation[] {

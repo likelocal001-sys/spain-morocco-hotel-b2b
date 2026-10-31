@@ -1,0 +1,109 @@
+'use client'
+
+import { FileCheck2, FileSpreadsheet, Wallet } from 'lucide-react'
+import type { DocumentKind } from '@/components/document-dialog'
+import { DeadlineCell, HotelCell, RoomsCell, StatusBadge, StayCell } from '@/components/reservation-cells'
+import { Button } from '@/components/ui/button'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { getDeadline } from '@/lib/format'
+import { useApp } from '@/lib/store'
+import { cn } from '@/lib/utils'
+import type { Reservation } from '@/lib/types'
+
+export function ClientReservationsTable({
+  reservations,
+  onOpenDocument,
+}: {
+  reservations: Reservation[]
+  onOpenDocument: (reservation: Reservation, kind: DocumentKind) => void
+}) {
+  const { t } = useApp()
+
+  if (reservations.length === 0) {
+    return <p className="px-4 py-12 text-center text-sm text-muted-foreground">{t.noResults}</p>
+  }
+
+  return (
+    <Table className="min-w-[900px]">
+      <TableHeader>
+        <TableRow className="bg-muted/50 hover:bg-muted/50">
+          <TableHead className="pl-4">{t.colId}</TableHead>
+          <TableHead>{t.colGroup}</TableHead>
+          <TableHead>{t.colStay}</TableHead>
+          <TableHead>{t.colHotel}</TableHead>
+          <TableHead>{t.colRooms}</TableHead>
+          <TableHead>{t.colStatus}</TableHead>
+          <TableHead>{t.colLimit}</TableHead>
+          <TableHead className="pr-4">{t.colDocs}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {reservations.map((r) => {
+          const level = getDeadline(r).level
+          const confirmed = r.status === 'confirmed'
+          return (
+            <TableRow
+              key={r.id}
+              className={cn(
+                (level === 'critical' || level === 'expired') && 'bg-destructive/[0.04]',
+                level === 'warn' && 'bg-warning/[0.07]',
+              )}
+            >
+              <TableCell className="pl-4 font-mono text-xs font-medium">{r.id}</TableCell>
+              <TableCell className="max-w-[240px] text-sm font-medium whitespace-normal">{r.groupName}</TableCell>
+              <TableCell>
+                <StayCell reservation={r} />
+              </TableCell>
+              <TableCell>
+                <HotelCell reservation={r} />
+              </TableCell>
+              <TableCell>
+                <RoomsCell reservation={r} />
+              </TableCell>
+              <TableCell>
+                <StatusBadge status={r.status} />
+              </TableCell>
+              <TableCell>
+                <DeadlineCell reservation={r} />
+              </TableCell>
+              <TableCell className="pr-4">
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    disabled={!confirmed}
+                    onClick={() => onOpenDocument(r, 'voucher')}
+                  >
+                    <FileCheck2 aria-hidden="true" />
+                    {t.voucher}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    disabled={!confirmed || !r.paymentLimit}
+                    onClick={() => onOpenDocument(r, 'payment')}
+                  >
+                    <Wallet aria-hidden="true" />
+                    {t.paymentNotice}
+                  </Button>
+                  {r.roomingList && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label={`${t.roomingList}: ${r.roomingList.name}`}
+                      title={r.roomingList.name}
+                      nativeButton={false}
+                      render={<a href={r.roomingList.url ?? '#'} download={r.roomingList.name} />}
+                    >
+                      <FileSpreadsheet />
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          )
+        })}
+      </TableBody>
+    </Table>
+  )
+}

@@ -1,0 +1,63 @@
+export type Lang = 'ko' | 'es'
+export type Role = 'client' | 'admin'
+export type ReservationStatus = 'pending' | 'in_progress' | 'confirmed' | 'cancelled'
+export type City = 'Madrid' | 'Barcelona' | 'Sevilla' | 'Granada' | 'Valencia' | 'Toledo' | 'Malaga'
+export type RequestTag =
+  | 'lateCheckout'
+  | 'earlyCheckin'
+  | 'adjacentRooms'
+  | 'sameFloor'
+  | 'busParking'
+  | 'earlyBreakfast'
+
+export interface AttachedFile {
+  name: string
+  size: number
+  url?: string
+}
+
+export interface RoomCounts {
+  single: number
+  twin: number
+  triple: number
+}
+
+export interface Reservation {
+  id: string
+  agencyId: string
+  groupName: string
+  checkIn: string
+  checkOut: string
+  city: City
+  hotelId?: string
+  preferredStars?: number
+  rooms: RoomCounts
+  breakfast: boolean
+  roomingList?: AttachedFile
+  requestTags: RequestTag[]
+  requests: string
+  status: ReservationStatus
+  paymentLimit?: string
+  finalAmount?: number
+  voucherFile?: AttachedFile
+  paid: boolean
+  createdAt: string
+}
+
+export interface Hotel {
+  id: string
+  nameEs: string
+  nameKo: string
+  city: City
+  stars: number
+  salesEmail: string
+  salesPhone: string
+  busParking: boolean
+  notes: string
+}
+
+export interface Agency {
+  id: string
+  nameKo: string
+  nameEs: string
+}

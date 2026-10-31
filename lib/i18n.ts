@@ -554,6 +554,7 @@ export const REQUEST_TAGS: RequestTag[] = [
   'sameFloor',
   'busParking',
   'earlyBreakfast',
+  'dinnerIncluded',
 ]
 
 export const REQUEST_TAG_LABELS: Record<RequestTag, Record<Lang, string>> = {
@@ -563,4 +564,5 @@ export const REQUEST_TAG_LABELS: Record<RequestTag, Record<Lang, string>> = {
   sameFloor: { ko: '동일 층 배정', es: 'Todas las habitaciones en la misma planta' },
   busParking: { ko: '버스 주차 필요', es: 'Aparcamiento para autocar' },
   earlyBreakfast: { ko: '조기 조식 (05:00)', es: 'Desayuno temprano (05:00)' },
+  dinnerIncluded: { ko: '저녁식사 포함', es: 'Cena incluida (media pensión)' },
 }

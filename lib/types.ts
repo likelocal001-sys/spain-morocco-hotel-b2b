@@ -32,6 +32,7 @@ export type RequestTag =
   | 'sameFloor'
   | 'busParking'
   | 'earlyBreakfast'
+  | 'dinnerIncluded'
 
 export interface AttachedFile {
   name: string

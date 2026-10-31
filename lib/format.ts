@@ -78,6 +78,17 @@ export function getStays(r: Reservation): Stay[] {
   ]
 }
 
+export const NEGOTIATION_STEP_COUNT = 5
+export const GROUP_CHECK_COUNT = 4
+
+export function negotiationProgress(r: Reservation) {
+  const stays = getStays(r)
+  const total = stays.length * NEGOTIATION_STEP_COUNT + GROUP_CHECK_COUNT
+  const done =
+    stays.reduce((sum, s) => sum + (r.negotiation?.[s.id]?.steps.length ?? 0), 0) + (r.groupChecks?.length ?? 0)
+  return { done, total, percent: Math.round((done / total) * 100) }
+}
+
 export function roomNights(r: Reservation) {
   return getStays(r).reduce((sum, s) => sum + totalRooms(r.rooms) * nightsBetween(s.checkIn, s.checkOut), 0)
 }

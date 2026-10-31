@@ -1,7 +1,26 @@
 export type Lang = 'ko' | 'es'
 export type Role = 'client' | 'admin'
 export type ReservationStatus = 'pending' | 'in_progress' | 'confirmed' | 'cancelled'
-export type City = 'Madrid' | 'Barcelona' | 'Sevilla' | 'Granada' | 'Valencia' | 'Toledo' | 'Malaga'
+export type KnownCity =
+  | 'Madrid'
+  | 'Barcelona'
+  | 'Sevilla'
+  | 'Granada'
+  | 'Valencia'
+  | 'Toledo'
+  | 'Malaga'
+  | 'Lisboa'
+  | 'Fatima'
+  | 'Porto'
+export type City = KnownCity | (string & {})
+export type NegotiationStep = 'quoteRequested' | 'quoteReceived' | 'counterOffer' | 'termsAgreed' | 'optionHeld'
+export type GroupCheck = 'roomingChecked' | 'requestsShared' | 'paymentInformed' | 'voucherSent'
+
+export interface StayNegotiation {
+  steps: NegotiationStep[]
+  rate?: number
+  note?: string
+}
 export type RequestTag =
   | 'lateCheckout'
   | 'earlyCheckin'
@@ -52,6 +71,8 @@ export interface Reservation {
   voucherFile?: AttachedFile
   paid: boolean
   createdAt: string
+  negotiation?: Record<string, StayNegotiation>
+  groupChecks?: GroupCheck[]
 }
 
 export interface HotelContact {

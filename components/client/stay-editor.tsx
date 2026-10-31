@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CITIES, CITY_LABELS } from '@/lib/i18n'
+import { CITIES, CUSTOM_CITY, cityLabel } from '@/lib/i18n'
 import { addDays, nightsBetween } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import type { City } from '@/lib/types'
@@ -17,6 +17,7 @@ export interface StayDraft {
   checkOut: string
   stars: string
   hotelId: string
+  customCity: boolean
 }
 
 const STAR_OPTIONS = ['3', '4', '5']
@@ -25,14 +26,15 @@ export function shiftISO(iso: string, days: number) {
   return addDays(new Date(`${iso}T00:00:00`), days)
 }
 
-export function createStayDraft(checkIn: string, city: City = 'Madrid', stars = '4'): StayDraft {
+export function createStayDraft(checkIn: string, city: City = 'Madrid', stars = '4', customCity = false): StayDraft {
   return {
     id: Math.random().toString(36).slice(2, 10),
     city,
     checkIn,
-    checkOut: shiftISO(checkIn, 2),
+    checkOut: shiftISO(checkIn, 1),
     stars,
     hotelId: 'none',
+    customCity,
   }
 }
 
@@ -52,8 +54,13 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
 
   function addStay() {
     const last = stays[stays.length - 1]
-    onChange([...stays, createStayDraft(last.checkOut, last.city, last.stars)])
+    onChange([...stays, createStayDraft(last.checkOut, last.city, last.stars, last.customCity)])
   }
+
+  const cityItems = [
+    ...CITIES.map((c) => ({ value: c as string, label: cityLabel(c, lang) })),
+    { value: CUSTOM_CITY, label: t.customCity },
+  ]
 
   return (
     <fieldset className="flex flex-col gap-2">
@@ -83,7 +90,7 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                   <span className="flex size-5 items-center justify-center rounded-full bg-primary font-mono text-[11px] text-primary-foreground">
                     {index + 1}
                   </span>
-                  {CITY_LABELS[stay.city][lang]}
+                  {stay.city.trim() ? cityLabel(stay.city, lang) : t.customCity}
                   <span className="font-mono font-normal text-muted-foreground">
                     {nights}
                     {t.nightsUnit}
@@ -134,17 +141,21 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                     {t.city}
                   </Label>
                   <Select
-                    items={CITIES.map((c) => ({ value: c, label: CITY_LABELS[c][lang] }))}
-                    value={stay.city}
-                    onValueChange={(v) => v && patch(index, { city: v as City, hotelId: 'none' })}
+                    items={cityItems}
+                    value={stay.customCity ? CUSTOM_CITY : stay.city}
+                    onValueChange={(v) => {
+                      if (!v) return
+                      if (v === CUSTOM_CITY) patch(index, { city: '', customCity: true, hotelId: 'none' })
+                      else patch(index, { city: v as City, customCity: false, hotelId: 'none' })
+                    }}
                   >
                     <SelectTrigger id={`${fieldId}-city`} className="w-full bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {CITIES.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {CITY_LABELS[c][lang]}
+                      {cityItems.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -173,6 +184,23 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                   </Select>
                 </div>
               </div>
+
+              {stay.customCity && (
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor={`${fieldId}-custom`} className="text-xs">
+                    {t.customCity}
+                  </Label>
+                  <Input
+                    id={`${fieldId}-custom`}
+                    value={stay.city}
+                    placeholder={t.customCityPlaceholder}
+                    onChange={(e) => patch(index, { city: e.target.value })}
+                    aria-invalid={!stay.city.trim() || undefined}
+                    className="bg-background"
+                    autoFocus
+                  />
+                </div>
+              )}
 
               <div className="flex flex-col gap-1">
                 <Label htmlFor={`${fieldId}-hotel`} className="text-xs">

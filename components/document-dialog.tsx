@@ -3,7 +3,7 @@
 import { Download, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { CITY_LABELS, REQUEST_TAG_LABELS } from '@/lib/i18n'
+import { cityLabel, REQUEST_TAG_LABELS } from '@/lib/i18n'
 import { formatDate, formatEUR, getStays, nightsBetween, toISODate, totalRooms } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import type { Reservation } from '@/lib/types'
@@ -86,7 +86,7 @@ export function DocumentDialog({
                     return (
                       <li key={stay.id}>
                         <span className="font-mono text-muted-foreground">{index + 1}. </span>
-                        {CITY_LABELS[stay.city][lang]} · {hotel ? `${hotel.nameEs} · ${hotel.stars}★` : `${t.unassigned} · ${stay.stars}★`}
+                        {cityLabel(stay.city, lang)} · {hotel ? `${hotel.nameEs} · ${hotel.stars}★` : `${t.unassigned} · ${stay.stars}★`}
                         <span className="block font-mono text-xs text-muted-foreground">
                           {formatDate(stay.checkIn, lang)} – {formatDate(stay.checkOut, lang)} (
                           {nightsBetween(stay.checkIn, stay.checkOut)}

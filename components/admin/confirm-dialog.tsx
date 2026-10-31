@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CITY_LABELS } from '@/lib/i18n'
+import { cityLabel } from '@/lib/i18n'
 import { addDays, formatEUR, formatFileSize, formatShortDate, getStays, nightsBetween, roomNights } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import type { AttachedFile, Reservation } from '@/lib/types'
@@ -62,7 +62,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
                 <div key={stay.id} className="flex flex-col gap-1 rounded-lg border bg-muted/40 p-2.5">
                   <Label htmlFor={id} className="flex flex-wrap items-baseline gap-x-2 text-xs">
                     <span className="font-mono text-primary">{index + 1}</span>
-                    {CITY_LABELS[stay.city][lang]}
+                    {cityLabel(stay.city, lang)}
                     <span className="font-mono font-normal text-muted-foreground">
                       {formatShortDate(stay.checkIn, lang)} → {formatShortDate(stay.checkOut, lang)} ·{' '}
                       {nightsBetween(stay.checkIn, stay.checkOut)}

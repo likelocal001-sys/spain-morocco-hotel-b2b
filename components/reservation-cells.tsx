@@ -1,7 +1,7 @@
 'use client'
 
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
-import { CITY_LABELS } from '@/lib/i18n'
+import { cityLabel } from '@/lib/i18n'
 import { formatDate, formatShortDate, getDeadline, getStays, nightsBetween, totalRooms } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -103,7 +103,7 @@ export function HotelCell({ reservation }: { reservation: Reservation }) {
         const hotel = hotelById(stay.hotelId)
         return (
           <li key={stay.id} className="flex min-w-0 items-baseline gap-1.5">
-            <span className="shrink-0 text-xs font-medium">{CITY_LABELS[stay.city][lang]}</span>
+            <span className="shrink-0 text-xs font-medium">{cityLabel(stay.city, lang)}</span>
             <span className="font-mono text-[10px] text-muted-foreground">
               {nightsBetween(stay.checkIn, stay.checkOut)}
               {t.nightsUnit}

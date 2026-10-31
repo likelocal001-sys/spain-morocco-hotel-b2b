@@ -114,13 +114,14 @@ export function NewBookingDialog({ open, onOpenChange }: { open: boolean; onOpen
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.groupName.trim()) return setError(t.errGroup)
+    if (form.stays.some((s) => !s.city.trim())) return setError(t.errCity)
     if (form.stays.some((s) => nightsBetween(s.checkIn, s.checkOut) <= 0)) return setError(t.errDates)
     if (form.stays.some((s, i) => i > 0 && s.checkIn < form.stays[i - 1].checkOut)) return setError(t.errStayOrder)
     if (total <= 0) return setError(t.errRooms)
 
     const stays: Stay[] = form.stays.map((s) => ({
       id: s.id,
-      city: s.city,
+      city: s.city.trim(),
       checkIn: s.checkIn,
       checkOut: s.checkOut,
       stars: Number(s.stars),

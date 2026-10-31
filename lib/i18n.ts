@@ -1,4 +1,4 @@
-import type { City, Lang, RequestTag } from './types'
+import type { City, GroupCheck, KnownCity, Lang, NegotiationStep, RequestTag } from './types'
 
 const ko = {
   appTagline: '스페인 호텔 예약 대행 B2B 포털',
@@ -83,6 +83,23 @@ const ko = {
   submitted: '예약이 접수되었습니다',
   errGroup: '그룹명을 입력해 주세요',
   errDates: '체크아웃은 체크인 이후 날짜여야 합니다',
+  errCity: '투숙 도시를 입력해 주세요',
+  customCity: '직접 입력',
+  customCityPlaceholder: '도시명 입력 (예: Córdoba)',
+  workspaceTitle: '그룹 협상 현황',
+  workspaceDesc: '숙박 구간별 협상 단계를 체크하면 자동 저장됩니다.',
+  progress: '진행률',
+  groupChecklist: '그룹 공통 체크리스트',
+  stayNegotiation: '구간별 호텔 협상',
+  quotedRate: '협상 단가 (€/객실·박)',
+  memo: '메모',
+  memoPlaceholder: '호텔 답변, 조건, 다음 액션 등',
+  noContacts: '등록된 담당자 없음',
+  negotiationHotel: '협상 호텔',
+  close: '닫기',
+  estimate: '예상 금액',
+  openWorkspace: '협상 현황 열기',
+  stepsDone: '완료',
   errRooms: '객실을 1개 이상 입력해 주세요',
   errFile: '.xlsx, .xls, .pdf 파일만 업로드할 수 있습니다',
 
@@ -266,6 +283,23 @@ const es: Dict = {
   submitted: 'Solicitud recibida',
   errGroup: 'Indique el nombre del grupo',
   errDates: 'La salida debe ser posterior a la entrada',
+  errCity: 'Indique la ciudad de alojamiento',
+  customCity: 'Otra (escribir)',
+  customCityPlaceholder: 'Nombre de la ciudad (ej.: Córdoba)',
+  workspaceTitle: 'Estado de negociación del grupo',
+  workspaceDesc: 'Marque cada paso por tramo; los cambios se guardan automáticamente.',
+  progress: 'Progreso',
+  groupChecklist: 'Checklist general del grupo',
+  stayNegotiation: 'Negociación por tramo',
+  quotedRate: 'Tarifa negociada (€/hab·noche)',
+  memo: 'Notas',
+  memoPlaceholder: 'Respuesta del hotel, condiciones, próximos pasos…',
+  noContacts: 'Sin contactos registrados',
+  negotiationHotel: 'Hotel en negociación',
+  close: 'Cerrar',
+  estimate: 'Importe estimado',
+  openWorkspace: 'Abrir estado de negociación',
+  stepsDone: 'hechos',
   errRooms: 'Indique al menos una habitación',
   errFile: 'Solo se admiten archivos .xlsx, .xls o .pdf',
 
@@ -366,9 +400,55 @@ const es: Dict = {
 
 export const dictionaries: Record<Lang, Dict> = { ko, es }
 
-export const CITIES: City[] = ['Madrid', 'Barcelona', 'Sevilla', 'Granada', 'Valencia', 'Toledo', 'Malaga']
+export const CITIES: KnownCity[] = [
+  'Madrid',
+  'Barcelona',
+  'Sevilla',
+  'Granada',
+  'Valencia',
+  'Toledo',
+  'Malaga',
+  'Lisboa',
+  'Fatima',
+  'Porto',
+]
 
-export const CITY_LABELS: Record<City, Record<Lang, string>> = {
+export const CUSTOM_CITY = '__custom__'
+
+export function isKnownCity(city: City): city is KnownCity {
+  return (CITIES as string[]).includes(city)
+}
+
+export function cityLabel(city: City, lang: Lang) {
+  return isKnownCity(city) ? CITY_LABELS[city][lang] : city
+}
+
+export const NEGOTIATION_STEPS: NegotiationStep[] = [
+  'quoteRequested',
+  'quoteReceived',
+  'counterOffer',
+  'termsAgreed',
+  'optionHeld',
+]
+
+export const NEGOTIATION_STEP_LABELS: Record<NegotiationStep, Record<Lang, string>> = {
+  quoteRequested: { ko: '견적 요청 발송', es: 'Solicitud de cotización enviada' },
+  quoteReceived: { ko: '호텔 견적 수신', es: 'Cotización recibida' },
+  counterOffer: { ko: '단가 재협상', es: 'Contraoferta enviada' },
+  termsAgreed: { ko: '조건 합의', es: 'Condiciones acordadas' },
+  optionHeld: { ko: '객실 블록 확보', es: 'Bloqueo de habitaciones' },
+}
+
+export const GROUP_CHECKS: GroupCheck[] = ['roomingChecked', 'requestsShared', 'paymentInformed', 'voucherSent']
+
+export const GROUP_CHECK_LABELS: Record<GroupCheck, Record<Lang, string>> = {
+  roomingChecked: { ko: '루밍리스트 확인', es: 'Rooming list revisada' },
+  requestsShared: { ko: '특별 요청 호텔 전달', es: 'Peticiones comunicadas al hotel' },
+  paymentInformed: { ko: '결제 기한 여행사 안내', es: 'Plazo de pago comunicado' },
+  voucherSent: { ko: '바우처 발송', es: 'Bono enviado' },
+}
+
+export const CITY_LABELS: Record<KnownCity, Record<Lang, string>> = {
   Madrid: { ko: '마드리드', es: 'Madrid' },
   Barcelona: { ko: '바르셀로나', es: 'Barcelona' },
   Sevilla: { ko: '세비야', es: 'Sevilla' },
@@ -376,6 +456,9 @@ export const CITY_LABELS: Record<City, Record<Lang, string>> = {
   Valencia: { ko: '발렌시아', es: 'Valencia' },
   Toledo: { ko: '톨레도', es: 'Toledo' },
   Malaga: { ko: '말라가', es: 'Málaga' },
+  Lisboa: { ko: '리스본', es: 'Lisboa' },
+  Fatima: { ko: '파티마', es: 'Fátima' },
+  Porto: { ko: '포르투', es: 'Oporto' },
 }
 
 export const REQUEST_TAGS: RequestTag[] = [

@@ -9,11 +9,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatEUR, getDeadline } from '@/lib/format'
+import { formatEUR, getDeadline, negotiationProgress } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
 import { ConfirmDialog } from './confirm-dialog'
+import { NegotiationWorkspace } from './negotiation-workspace'
 import { SpanishEmailDialog } from './spanish-email-dialog'
 
 export function PipelineTab() {
@@ -23,6 +24,7 @@ export function PipelineTab() {
   const [query, setQuery] = useState('')
   const [confirming, setConfirming] = useState<Reservation | null>(null)
   const [emailing, setEmailing] = useState<Reservation | null>(null)
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null)
 
   const byAgency = useMemo(
     () => reservations.filter((r) => agency === 'all' || r.agencyId === agency),
@@ -118,7 +120,30 @@ export function PipelineTab() {
                   <TableCell className="pl-4 font-mono text-xs font-medium">{r.id}</TableCell>
                   <TableCell className="text-xs">{agencyName(r.agencyId)}</TableCell>
                   <TableCell className="max-w-[220px] whitespace-normal">
-                    <p className="text-sm font-medium">{r.groupName}</p>
+                    <button
+                      type="button"
+                      onClick={() => setWorkspaceId(r.id)}
+                      title={t.openWorkspace}
+                      className="text-left text-sm font-medium underline-offset-4 hover:text-primary hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    >
+                      {r.groupName}
+                    </button>
+                    {r.status !== 'cancelled' && (
+                      <div className="mt-1 flex items-center gap-1.5" aria-label={t.progress}>
+                        <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={cn(
+                              'h-full rounded-full',
+                              negotiationProgress(r).percent === 100 ? 'bg-success' : 'bg-primary',
+                            )}
+                            style={{ width: `${negotiationProgress(r).percent}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                          {negotiationProgress(r).done}/{negotiationProgress(r).total}
+                        </span>
+                      </div>
+                    )}
                     {r.roomingList && (
                       <a
                         href={r.roomingList.url ?? '#'}
@@ -228,6 +253,20 @@ export function PipelineTab() {
         </Table>
       )}
 
+      {workspaceId && (
+        <NegotiationWorkspace
+          reservationId={workspaceId}
+          onClose={() => setWorkspaceId(null)}
+          onConfirm={(r) => {
+            setWorkspaceId(null)
+            setConfirming(r)
+          }}
+          onEmail={(r) => {
+            setWorkspaceId(null)
+            setEmailing(r)
+          }}
+        />
+      )}
       {confirming && <ConfirmDialog reservation={confirming} onClose={() => setConfirming(null)} />}
       {emailing && <SpanishEmailDialog reservation={emailing} onClose={() => setEmailing(null)} />}
     </section>

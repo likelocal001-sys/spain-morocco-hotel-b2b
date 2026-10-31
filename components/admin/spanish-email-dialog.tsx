@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { CITY_LABELS, REQUEST_TAG_LABELS } from '@/lib/i18n'
+import { cityLabel, REQUEST_TAG_LABELS } from '@/lib/i18n'
 import { formatDate, getStays, nightsBetween, totalRooms } from '@/lib/format'
 import type { Hotel, Reservation, Stay } from '@/lib/types'
 import { useApp } from '@/lib/store'
@@ -30,7 +30,7 @@ function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
     '',
     `• Referencia: ${r.id}`,
     `• Grupo: ${r.groupName}`,
-    `• Ciudad: ${CITY_LABELS[stay.city].es}`,
+    `• Ciudad: ${cityLabel(stay.city, 'es')}`,
     `• Fechas: entrada ${formatDate(stay.checkIn, 'es')} – salida ${formatDate(stay.checkOut, 'es')} (${nights} noche${nights === 1 ? '' : 's'})`,
     `• Habitaciones: ${roomParts.join(', ')} — total ${totalRooms(r.rooms)}`,
     `• Régimen: ${r.breakfast ? 'alojamiento y desayuno' : 'solo alojamiento'}`,
@@ -91,7 +91,7 @@ export function SpanishEmailDialog({ reservation, onClose }: { reservation: Rese
                 onClick={() => selectStay(index)}
               >
                 <span className="font-mono">{index + 1}</span>
-                {hotelById(s.hotelId)?.nameEs ?? `${CITY_LABELS[s.city][lang]} · ${s.stars}★`}
+                {hotelById(s.hotelId)?.nameEs ?? `${cityLabel(s.city, lang)} · ${s.stars}★`}
               </Button>
             ))}
           </div>

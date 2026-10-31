@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatEUR } from '@/lib/format'
-import { CITIES, CITY_LABELS } from '@/lib/i18n'
+import { CITIES, cityLabel } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Hotel } from '@/lib/types'
@@ -19,7 +19,7 @@ export function HotelsTab() {
   const [city, setCity] = useState('all')
   const [editing, setEditing] = useState<Hotel | 'new' | null>(null)
 
-  const cityItems = [{ value: 'all', label: t.allCities }, ...CITIES.map((c) => ({ value: c, label: CITY_LABELS[c][lang] }))]
+  const cityItems = [{ value: 'all', label: t.allCities }, ...CITIES.map((c) => ({ value: c, label: cityLabel(c, lang) }))]
 
   const rows = hotels.filter((h) => {
     const q = query.trim().toLowerCase()
@@ -86,7 +86,7 @@ export function HotelsTab() {
               <TableCell className="pl-4">
                 <p className="text-sm font-medium">{h.nameEs}</p>
               </TableCell>
-              <TableCell className="text-xs">{CITY_LABELS[h.city][lang]}</TableCell>
+              <TableCell className="text-xs">{cityLabel(h.city, lang)}</TableCell>
               <TableCell>
                 <span className="font-mono text-xs text-warning-foreground" aria-label={`${h.stars}${t.starsSuffix}`}>
                   {'★'.repeat(h.stars)}

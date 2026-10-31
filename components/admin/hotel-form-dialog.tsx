@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { formatEUR } from '@/lib/format'
-import { CITIES, CITY_LABELS } from '@/lib/i18n'
+import { CITIES, cityLabel } from '@/lib/i18n'
 import { DEFAULT_FEE_RATE, FEE_RATES, useApp } from '@/lib/store'
 import type { City, Hotel, HotelContact } from '@/lib/types'
 
@@ -56,7 +56,7 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
     onClose()
   }
 
-  const cityItems = CITIES.map((c) => ({ value: c, label: CITY_LABELS[c][lang] }))
+  const cityItems = CITIES.map((c) => ({ value: c, label: cityLabel(c, lang) }))
   const starItems = [3, 4, 5].map((s) => ({ value: String(s), label: `${s}${t.starsSuffix}` }))
   const rateItems = FEE_RATES.map((r) => ({ value: String(r), label: formatEUR(r, lang) }))
 

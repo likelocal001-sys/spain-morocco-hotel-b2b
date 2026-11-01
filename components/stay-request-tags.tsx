@@ -6,29 +6,42 @@ import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { RequestTag } from '@/lib/types'
 
-export function RequestTagChips({ tags, compact = false }: { tags: RequestTag[]; compact?: boolean }) {
+export function RequestTagChips({
+  tags,
+  note,
+  compact = false,
+}: {
+  tags: RequestTag[]
+  note?: string
+  compact?: boolean
+}) {
   const { lang } = useApp()
-  if (tags.length === 0) return null
+  const trimmedNote = note?.trim()
+  const labels = tags.map((tag) => REQUEST_TAG_LABELS[tag]?.[lang]).filter(Boolean)
+  if (labels.length === 0 && !trimmedNote) return null
+  const chip = cn(
+    'rounded-md border border-warning/50 bg-warning/20 font-medium text-warning-foreground',
+    compact ? 'px-1.5 py-px text-[10px]' : 'px-2 py-0.5 text-xs',
+  )
   return (
     <ul className="flex flex-wrap gap-1" aria-label="requests">
-      {tags.map((tag) => (
-        <li
-          key={tag}
-          className={cn(
-            'rounded-md border border-warning/50 bg-warning/20 font-medium text-warning-foreground',
-            compact ? 'px-1.5 py-px text-[10px]' : 'px-2 py-0.5 text-xs',
-          )}
-        >
-          {REQUEST_TAG_LABELS[tag][lang]}
+      {labels.map((label) => (
+        <li key={label} className={chip}>
+          {label}
         </li>
       ))}
+      {trimmedNote && (
+        <li className={cn(chip, 'max-w-full break-words whitespace-pre-wrap', compact && 'line-clamp-1')}>
+          {trimmedNote}
+        </li>
+      )}
     </ul>
   )
 }
 
-export function StayRequestsBox({ tags }: { tags: RequestTag[] }) {
+export function StayRequestsBox({ tags, note }: { tags: RequestTag[]; note?: string }) {
   const { t } = useApp()
-  const empty = tags.length === 0
+  const empty = tags.length === 0 && !note?.trim()
   return (
     <div
       className={cn(
@@ -48,7 +61,7 @@ export function StayRequestsBox({ tags }: { tags: RequestTag[] }) {
       {empty ? (
         <span className="text-xs text-muted-foreground">{t.noAgencyRequests}</span>
       ) : (
-        <RequestTagChips tags={tags} />
+        <RequestTagChips tags={tags} note={note} />
       )}
     </div>
   )

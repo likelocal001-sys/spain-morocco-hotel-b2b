@@ -339,7 +339,7 @@ function StayCard({
 
       {open && (
       <div id={`${fieldId}-body`} className="flex flex-col gap-3 px-4 pb-4">
-      <StayRequestsBox tags={stay.requestTags ?? []} />
+      <StayRequestsBox tags={stay.requestTags ?? []} note={stay.requestNote} />
 
       <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
         <div className="flex flex-col gap-3">

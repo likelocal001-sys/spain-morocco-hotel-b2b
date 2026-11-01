@@ -1,4 +1,4 @@
-import type { City, GroupCheck, KnownCity, Lang, NegotiationStep, RequestTag } from './types'
+import type { City, GroupCheck, KnownCity, Lang, NegotiationStep, RequestTag, Stay } from './types'
 
 const ko = {
   appTagline: '스페인 호텔 예약 대행 B2B 포털',
@@ -100,6 +100,9 @@ const ko = {
   chooseFile: '파일 선택',
   removeFile: '파일 삭제',
   quickRequests: '자주 쓰는 요청 (스페인어 자동 변환)',
+  customRequest: '직접 입력',
+  customRequestPlaceholder: '이 호텔에 전달할 요청사항을 입력하세요',
+  commonRequests: '공통 요청사항',
   requests: '기타 요청사항',
   requestsPh: '추가 요청 사항을 자유롭게 입력하세요',
   cancel: '취소',
@@ -182,7 +185,7 @@ const ko = {
   paidToast: '결제 완료로 처리되었습니다',
   confirmTitle: '예약 확정 처리',
   confirmDesc: '호텔에서 받은 최종 조건을 입력하면 여행사 화면에 즉시 반영됩니다.',
-    finalAmount: '여행사 청구 금액 (EUR)',
+    finalAmount: '여행사 청구 ��액 (EUR)',
     finalAmountHint: '협상 단가 × 객실 × 박수 자동 합산 · 필요 시 수정',
     finalComplete: '최종 완료',
     blocksStatus: '블럭 확정',
@@ -425,6 +428,9 @@ const es: Dict = {
   chooseFile: 'Seleccionar archivo',
   removeFile: 'Quitar archivo',
   quickRequests: 'Peticiones frecuentes',
+  customRequest: 'Otra petición',
+  customRequestPlaceholder: 'Escriba la petición para este hotel',
+  commonRequests: 'Peticiones generales',
   requests: 'Otras peticiones',
   requestsPh: 'Escriba cualquier petición adicional',
   cancel: 'Cancelar',
@@ -716,8 +722,6 @@ export const CITY_LABELS: Record<KnownCity, Record<Lang, string>> = {
 export const REQUEST_TAGS: RequestTag[] = [
   'lateCheckout',
   'earlyCheckin',
-  'adjacentRooms',
-  'sameFloor',
   'busParking',
   'earlyBreakfast',
   'dinnerIncluded',
@@ -731,4 +735,10 @@ export const REQUEST_TAG_LABELS: Record<RequestTag, Record<Lang, string>> = {
   busParking: { ko: '버스 주차 필요', es: 'Aparcamiento para autocar' },
   earlyBreakfast: { ko: '조기 조식 (05:00)', es: 'Desayuno temprano (05:00)' },
   dinnerIncluded: { ko: '저녁식사 포함', es: 'Cena incluida (media pensión)' },
+}
+
+export function stayRequestLabels(stay: Pick<Stay, 'requestTags' | 'requestNote'>, lang: Lang): string[] {
+  const tags = (stay.requestTags ?? []).map((tag) => REQUEST_TAG_LABELS[tag]?.[lang]).filter(Boolean)
+  const note = stay.requestNote?.trim()
+  return note ? [...tags, note] : tags
 }

@@ -54,6 +54,7 @@ export interface Stay {
   stars: number
   hotelId?: string
   requestTags?: RequestTag[]
+  requestNote?: string
 }
 
 export interface Reservation {

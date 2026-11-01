@@ -12,17 +12,63 @@ import { formatDate, getStays, nightsBetween, totalRooms } from '@/lib/format'
 import type { Hotel, Reservation, Stay } from '@/lib/types'
 import { useApp } from '@/lib/store'
 
-function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
+const hasKorean = (text: string) => /[\u3131-\uD79D]/.test(text)
+
+function stayPeticiones(stay: Stay) {
+  const parts = (stay.requestTags ?? []).map((tag) => REQUEST_TAG_LABELS[tag]?.es).filter(Boolean)
+  const note = stay.requestNote?.trim()
+  if (note) parts.push(hasKorean(note) ? `${note} (texto original del cliente)` : note)
+  return parts.join('; ')
+}
+
+function stayDates(stay: Stay) {
   const nights = nightsBetween(stay.checkIn, stay.checkOut)
+  return `entrada ${formatDate(stay.checkIn, 'es')} – salida ${formatDate(stay.checkOut, 'es')} (${nights} noche${nights === 1 ? '' : 's'})`
+}
+
+interface HotelGroup {
+  key: string
+  hotel?: Hotel
+  stays: Stay[]
+}
+
+function groupStaysByHotel(stays: Stay[], hotelById: (id?: string) => Hotel | undefined): HotelGroup[] {
+  const groups: HotelGroup[] = []
+  for (const stay of stays) {
+    const hotel = hotelById(stay.hotelId)
+    const existing = hotel && groups.find((g) => g.hotel?.id === hotel.id)
+    if (existing) existing.stays.push(stay)
+    else groups.push({ key: hotel?.id ?? stay.id, hotel, stays: [stay] })
+  }
+  return groups
+}
+
+function buildSpanishEmail(r: Reservation, group: HotelGroup) {
+  const { hotel, stays } = group
   const roomParts = [
     r.rooms.single && `${r.rooms.single} individual${r.rooms.single > 1 ? 'es' : ''}`,
     r.rooms.twin && `${r.rooms.twin} doble${r.rooms.twin > 1 ? 's' : ''} (twin)`,
     r.rooms.triple && `${r.rooms.triple} triple${r.rooms.triple > 1 ? 's' : ''}`,
   ].filter(Boolean)
-  const requests = (stay.requestTags ?? r.requestTags).map((tag) => REQUEST_TAG_LABELS[tag].es)
-  const hasKorean = /[\u3131-\uD79D]/.test(r.requests)
+  const first = stays[0]
 
-  const subject = `Solicitud de reserva de grupo – ${r.id} (${formatDate(stay.checkIn, 'es')})`
+  const stayLines =
+    stays.length === 1
+      ? [
+          `• Ciudad: ${cityLabel(first.city, 'es')}`,
+          `• Fechas: ${stayDates(first)}`,
+          ...(stayPeticiones(first) ? [`• Peticiones especiales: ${stayPeticiones(first)}`] : []),
+        ]
+      : [
+          `• Ciudad: ${cityLabel(first.city, 'es')}`,
+          '• Estancias:',
+          ...stays.flatMap((s, i) => [
+            `   ${i + 1}) ${stayDates(s)}`,
+            ...(stayPeticiones(s) ? [`      Peticiones especiales: ${stayPeticiones(s)}`] : []),
+          ]),
+        ]
+
+  const subject = `Solicitud de reserva de grupo – ${r.id} (${formatDate(first.checkIn, 'es')})`
   const body = [
     `Estimado equipo comercial${hotel ? ` de ${hotel.nameEs}` : ''}:`,
     '',
@@ -30,13 +76,13 @@ function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
     '',
     `• Referencia: ${r.id}`,
     `• Grupo: ${r.groupName}`,
-    `• Ciudad: ${cityLabel(stay.city, 'es')}`,
-    `• Fechas: entrada ${formatDate(stay.checkIn, 'es')} – salida ${formatDate(stay.checkOut, 'es')} (${nights} noche${nights === 1 ? '' : 's'})`,
+    ...stayLines,
     `• Habitaciones: ${roomParts.join(', ')} — total ${totalRooms(r.rooms)}`,
     `• Régimen: ${r.breakfast ? 'alojamiento y desayuno' : 'solo alojamiento'}`,
-    ...(!hotel ? [`• Categoría deseada: ${stay.stars} estrellas`] : []),
-    ...(requests.length ? [`• Peticiones especiales: ${requests.join('; ')}`] : []),
-    ...(r.requests ? [`• Observaciones${hasKorean ? ' (texto original del cliente)' : ''}: ${r.requests}`] : []),
+    ...(!hotel ? [`• Categoría deseada: ${first.stars} estrellas`] : []),
+    ...(r.requests?.trim()
+      ? [`• Observaciones generales${hasKorean(r.requests) ? ' (texto original del cliente)' : ''}: ${r.requests.trim()}`]
+      : []),
     ...(r.roomingList ? ['• Adjuntamos la rooming list del grupo.'] : []),
     '',
     'Les agradeceríamos que nos indicaran la tarifa neta por habitación y noche, las condiciones de cancelación y la fecha límite de pago (payment limit).',
@@ -53,15 +99,15 @@ function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
 
 export function SpanishEmailDialog({ reservation, onClose }: { reservation: Reservation; onClose: () => void }) {
   const { t, lang, hotelById } = useApp()
-  const stays = getStays(reservation)
-  const [stayIndex, setStayIndex] = useState(0)
-  const stay = stays[stayIndex]
-  const hotel = hotelById(stay.hotelId)
-  const [email, setEmail] = useState(() => buildSpanishEmail(reservation, stay, hotel))
+  const groups = groupStaysByHotel(getStays(reservation), hotelById)
+  const [groupIndex, setGroupIndex] = useState(0)
+  const group = groups[groupIndex] ?? groups[0]
+  const hotel = group.hotel
+  const [email, setEmail] = useState(() => buildSpanishEmail(reservation, group))
 
-  function selectStay(index: number) {
-    setStayIndex(index)
-    setEmail(buildSpanishEmail(reservation, stays[index], hotelById(stays[index].hotelId)))
+  function selectGroup(index: number) {
+    setGroupIndex(index)
+    setEmail(buildSpanishEmail(reservation, groups[index]))
   }
 
   const recipients = (hotel?.contacts ?? []).map((c) => c.email).filter(Boolean)
@@ -79,19 +125,20 @@ export function SpanishEmailDialog({ reservation, onClose }: { reservation: Rese
           <DialogTitle>{t.emailTitle}</DialogTitle>
           <DialogDescription>{t.emailDesc}</DialogDescription>
         </DialogHeader>
-        {stays.length > 1 && (
+        {groups.length > 1 && (
           <div className="flex flex-wrap gap-1.5" role="group" aria-label={t.itinerary}>
-            {stays.map((s, index) => (
+            {groups.map((g, index) => (
               <Button
-                key={s.id}
+                key={g.key}
                 type="button"
                 size="sm"
-                variant={index === stayIndex ? 'default' : 'outline'}
-                aria-pressed={index === stayIndex}
-                onClick={() => selectStay(index)}
+                variant={index === groupIndex ? 'default' : 'outline'}
+                aria-pressed={index === groupIndex}
+                onClick={() => selectGroup(index)}
               >
                 <span className="font-mono">{index + 1}</span>
-                {hotelById(s.hotelId)?.nameEs ?? `${cityLabel(s.city, lang)} · ${s.stars}★`}
+                {g.hotel?.nameEs ?? `${cityLabel(g.stays[0].city, lang)} · ${g.stays[0].stars}★`}
+                {g.stays.length > 1 && <span className="font-mono text-xs opacity-70">×{g.stays.length}</span>}
               </Button>
             ))}
           </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Trash2 } from 'lucide-react'
+import { PenLine, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +20,8 @@ export interface StayDraft {
   hotelId: string
   customCity: boolean
   requestTags: RequestTag[]
+  requestNote: string
+  noteOpen: boolean
 }
 
 const STAR_OPTIONS = ['3', '4', '5']
@@ -38,6 +40,8 @@ export function createStayDraft(checkIn: string, city: City = 'Madrid', stars = 
     hotelId: 'none',
     customCity,
     requestTags: [],
+    requestNote: '',
+    noteOpen: false,
   }
 }
 
@@ -260,7 +264,40 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                       </button>
                     )
                   })}
+                  <button
+                    type="button"
+                    aria-pressed={stay.noteOpen}
+                    aria-controls={`${fieldId}-note`}
+                    onClick={() =>
+                      patch(index, stay.noteOpen ? { noteOpen: false, requestNote: '' } : { noteOpen: true })
+                    }
+                    className={cn(
+                      'flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                      stay.noteOpen
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-input bg-background hover:border-primary hover:text-primary',
+                    )}
+                  >
+                    <PenLine className="size-3" aria-hidden="true" />
+                    {t.customRequest}
+                  </button>
                 </div>
+                {stay.noteOpen && (
+                  <>
+                    <Label htmlFor={`${fieldId}-note`} className="sr-only">
+                      {t.customRequest}
+                    </Label>
+                    <Input
+                      id={`${fieldId}-note`}
+                      value={stay.requestNote}
+                      maxLength={300}
+                      placeholder={t.customRequestPlaceholder}
+                      onChange={(e) => patch(index, { requestNote: e.target.value })}
+                      className="bg-background"
+                      autoFocus
+                    />
+                  </>
+                )}
               </div>
             </li>
           )

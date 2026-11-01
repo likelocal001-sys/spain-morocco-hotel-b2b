@@ -120,6 +120,7 @@ export interface Hotel {
   stars: number
   contacts: HotelContact[]
   feeRate: number
+  rates?: Partial<Record<RoomType, number>>
   busParking: boolean
   notes: string
   bank?: HotelBank

@@ -13,9 +13,21 @@ import { Textarea } from '@/components/ui/textarea'
 import { DEFAULT_PAYMENT_DAYS, formatEUR } from '@/lib/format'
 import { CITIES, CUSTOM_CITY, cityLabel, isKnownCity } from '@/lib/i18n'
 import { DEFAULT_FEE_RATE, FEE_RATES, useApp } from '@/lib/store'
-import type { City, Hotel, HotelBank, HotelContact } from '@/lib/types'
+import type { City, Hotel, HotelBank, HotelContact, RoomType } from '@/lib/types'
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
+
+const ROOM_TYPES: { key: RoomType; label: string }[] = [
+  { key: 'single', label: 'Single' },
+  { key: 'twin', label: 'Twin' },
+  { key: 'triple', label: 'Triple' },
+]
+
+function cleanRates(rates: Hotel['rates']): Hotel['rates'] {
+  if (!rates) return undefined
+  const entries = Object.entries(rates).filter(([, v]) => typeof v === 'number' && Number.isFinite(v) && v > 0)
+  return entries.length ? (Object.fromEntries(entries) as Hotel['rates']) : undefined
+}
 
 const newContact = (): HotelContact => ({ id: `c-${crypto.randomUUID()}`, name: '', email: '', phone: '' })
 
@@ -83,6 +95,7 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
       city: form.city.trim(),
       contacts,
       bank: cleanBank(form.bank),
+      rates: cleanRates(form.rates),
       paymentDaysBefore: Math.max(0, Math.round(form.paymentDaysBefore ?? DEFAULT_PAYMENT_DAYS)),
       id: hotel?.id ?? `h-${Date.now()}`,
     })
@@ -194,6 +207,37 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
               {t.busParking} — {t.available}
             </Label>
           </div>
+
+          <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
+            <legend className="px-1 text-sm font-medium">{t.hotelDefaultRates}</legend>
+            <div className="grid grid-cols-3 gap-2">
+              {ROOM_TYPES.map(({ key, label }) => (
+                <div key={key} className="flex flex-col gap-1">
+                  <Label htmlFor={`h-rate-${key}`} className="text-xs text-muted-foreground">
+                    {label}
+                  </Label>
+                  <Input
+                    id={`h-rate-${key}`}
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    placeholder="€"
+                    value={form.rates?.[key] ?? ''}
+                    onChange={(e) => {
+                      const value = Number(e.target.value)
+                      set('rates', { ...form.rates, [key]: e.target.value && value >= 0 ? value : undefined })
+                    }}
+                    className="font-mono"
+                    aria-describedby="h-rates-hint"
+                  />
+                </div>
+              ))}
+            </div>
+            <p id="h-rates-hint" className="text-[11px] text-muted-foreground">
+              {t.hotelDefaultRatesHint}
+            </p>
+          </fieldset>
 
           <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
             <legend className="px-1 text-sm font-medium">{t.contacts} *</legend>

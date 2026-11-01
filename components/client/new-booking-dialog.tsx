@@ -139,7 +139,7 @@ export function NewBookingDialog({
     update('roomingList', { name: file.name, size: file.size, url: URL.createObjectURL(file) })
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.groupName.trim()) return setError(t.errGroup)
     if (form.stays.some((s) => !s.city.trim())) return setError(t.errCity)
@@ -185,7 +185,8 @@ export function NewBookingDialog({
       return
     }
 
-    const created = addReservation(input)
+    const created = await addReservation(input)
+    if (!created) return
     toast.success(t.submitted, { description: created.id })
     setForm(initialForm())
     setError(null)

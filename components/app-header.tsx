@@ -1,9 +1,9 @@
 'use client'
 
-import { Building2, ShieldCheck } from 'lucide-react'
+import { Building2, LogOut, ShieldCheck } from 'lucide-react'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import type { Lang, Role } from '@/lib/types'
+import type { Lang } from '@/lib/types'
 
 function Segmented<T extends string>({
   label,
@@ -38,7 +38,7 @@ function Segmented<T extends string>({
 }
 
 export function AppHeader() {
-  const { t, lang, setLang, role, setRole } = useApp()
+  const { t, lang, setLang, role, profile, signOut, agencyName, currentAgencyId } = useApp()
 
   return (
     <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-sm">
@@ -66,35 +66,27 @@ export function AppHeader() {
               { value: 'es', label: 'Español' },
             ]}
           />
-          <div className="flex items-center gap-1.5">
-            <span className="hidden rounded bg-warning/90 px-1.5 py-0.5 text-[10px] font-semibold text-warning-foreground uppercase sm:inline">
-              {t.testMode}
-            </span>
-            <Segmented<Role>
-              label={t.viewSwitch}
-              value={role}
-              onChange={setRole}
-              options={[
-                {
-                  value: 'client',
-                  label: (
-                    <>
-                      <Building2 className="size-3.5" aria-hidden="true" />
-                      {t.clientView}
-                    </>
-                  ),
-                },
-                {
-                  value: 'admin',
-                  label: (
-                    <>
-                      <ShieldCheck className="size-3.5" aria-hidden="true" />
-                      {t.adminView}
-                    </>
-                  ),
-                },
-              ]}
-            />
+          <div className="flex items-center gap-2 rounded-lg bg-white/10 py-1 pr-1 pl-2.5">
+            {role === 'admin' ? (
+              <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+            ) : (
+              <Building2 className="size-4 shrink-0" aria-hidden="true" />
+            )}
+            <div className="min-w-0 leading-tight">
+              <p className="text-xs font-semibold">
+                {role === 'admin' ? t.roleAdminBadge : agencyName(currentAgencyId)}
+              </p>
+              <p className="max-w-40 truncate text-[11px] text-white/70">{profile.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              className="flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-white/85 transition-colors hover:bg-white/15 hover:text-white"
+            >
+              <LogOut className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">{t.logout}</span>
+              <span className="sr-only sm:hidden">{t.logout}</span>
+            </button>
           </div>
         </div>
       </div>

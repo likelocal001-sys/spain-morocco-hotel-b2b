@@ -1,14 +1,16 @@
 'use client'
 
-import { Building, Calculator, Workflow } from 'lucide-react'
+import { Building, Calculator, Users, Workflow } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useApp } from '@/lib/store'
 import { BillingTab } from './billing-tab'
 import { HotelsTab } from './hotels-tab'
+import { MembersTab } from './members-tab'
 import { PipelineTab } from './pipeline-tab'
 
 export function AdminBackoffice() {
-  const { t } = useApp()
+  const { t, members } = useApp()
+  const pendingCount = members.filter((m) => m.role === 'client' && !m.agencyId).length
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -30,6 +32,15 @@ export function AdminBackoffice() {
             <Calculator aria-hidden="true" />
             {t.tabBilling}
           </TabsTrigger>
+          <TabsTrigger value="members" className="px-3">
+            <Users aria-hidden="true" />
+            {t.tabMembers}
+            {pendingCount > 0 && (
+              <span className="rounded-full bg-warning px-1.5 text-[10px] font-bold text-warning-foreground">
+                {pendingCount}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="pipeline">
           <PipelineTab />
@@ -39,6 +50,9 @@ export function AdminBackoffice() {
         </TabsContent>
         <TabsContent value="billing">
           <BillingTab />
+        </TabsContent>
+        <TabsContent value="members">
+          <MembersTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -597,17 +597,17 @@ const es: Dict = {
 export const dictionaries: Record<Lang, Dict> = { ko, es }
 
 export const CITIES: KnownCity[] = [
-  'Madrid',
   'Barcelona',
-  'Sevilla',
-  'Granada',
-  'Valencia',
-  'Toledo',
-  'Malaga',
-  'Zaragoza',
-  'Lisboa',
   'Fatima',
+  'Granada',
+  'Lisboa',
+  'Madrid',
+  'Malaga',
   'Porto',
+  'Sevilla',
+  'Toledo',
+  'Valencia',
+  'Zaragoza',
 ]
 
 export const CUSTOM_CITY = '__custom__'

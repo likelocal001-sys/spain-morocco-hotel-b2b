@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { DEFAULT_PAYMENT_DAYS, formatEUR } from '@/lib/format'
-import { CITIES, cityLabel } from '@/lib/i18n'
+import { CITIES, CUSTOM_CITY, cityLabel, isKnownCity } from '@/lib/i18n'
 import { DEFAULT_FEE_RATE, FEE_RATES, useApp } from '@/lib/store'
 import type { City, Hotel, HotelBank, HotelContact } from '@/lib/types'
 
@@ -59,6 +59,7 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
   const bank = form.bank ?? emptyBank()
   const setBank = (patch: Partial<HotelBank>) => set('bank', { ...bank, ...patch })
   const [error, setError] = useState<string | null>(null)
+  const [customCity, setCustomCity] = useState(() => (hotel ? !isKnownCity(hotel.city) : false))
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((p) => ({ ...p, [key]: value }))
 
   const updateContact = (id: string, patch: Partial<HotelContact>) =>
@@ -74,10 +75,12 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
       .map((c) => ({ ...c, name: c.name.trim(), email: c.email.trim(), phone: c.phone.trim() }))
       .filter((c) => c.name || c.email || c.phone)
     if (!form.nameEs.trim() || !contacts.some((c) => c.email)) return setError(t.errHotelName)
+    if (!form.city.trim()) return setError(t.errCity)
     if (contacts.some((c) => c.email && !EMAIL_PATTERN.test(c.email))) return setError(t.errContactEmail)
     saveHotel({
       ...form,
       nameEs: form.nameEs.trim(),
+      city: form.city.trim(),
       contacts,
       bank: cleanBank(form.bank),
       paymentDaysBefore: Math.max(0, Math.round(form.paymentDaysBefore ?? DEFAULT_PAYMENT_DAYS)),
@@ -87,7 +90,10 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
     onClose()
   }
 
-  const cityItems = CITIES.map((c) => ({ value: c, label: cityLabel(c, lang) }))
+  const cityItems = [
+    ...CITIES.map((c) => ({ value: c as string, label: cityLabel(c, lang) })),
+    { value: CUSTOM_CITY, label: t.customCity },
+  ]
   const starItems = [3, 4, 5].map((s) => ({ value: String(s), label: `${s}${t.starsSuffix}` }))
   const rateItems = FEE_RATES.map((r) => ({ value: String(r), label: formatEUR(r, lang) }))
 
@@ -105,18 +111,49 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="h-city">{t.city}</Label>
-              <Select items={cityItems} value={form.city} onValueChange={(v) => v && set('city', v as City)}>
+              <Select
+                items={cityItems}
+                value={customCity ? CUSTOM_CITY : form.city}
+                onValueChange={(v) => {
+                  if (!v) return
+                  if (v === CUSTOM_CITY) {
+                    setCustomCity(true)
+                    set('city', '')
+                  } else {
+                    setCustomCity(false)
+                    set('city', v as City)
+                  }
+                }}
+              >
                 <SelectTrigger id="h-city" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {cityItems.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
+                    <SelectItem
+                      key={item.value}
+                      value={item.value}
+                      className={item.value === CUSTOM_CITY ? 'border-t font-medium' : undefined}
+                    >
                       {item.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {customCity && (
+                <>
+                  <Label htmlFor="h-city-custom" className="sr-only">
+                    {t.customCity}
+                  </Label>
+                  <Input
+                    id="h-city-custom"
+                    value={form.city}
+                    placeholder={t.customCityPlaceholder}
+                    autoFocus
+                    onChange={(e) => set('city', e.target.value)}
+                  />
+                </>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="h-stars">{t.grade}</Label>

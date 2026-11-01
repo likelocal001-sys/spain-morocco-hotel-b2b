@@ -19,7 +19,13 @@ export function HotelsTab() {
   const [city, setCity] = useState('all')
   const [editing, setEditing] = useState<Hotel | 'new' | null>(null)
 
-  const cityItems = [{ value: 'all', label: t.allCities }, ...CITIES.map((c) => ({ value: c, label: cityLabel(c, lang) }))]
+  const filterCities = [...new Set<string>([...CITIES, ...hotels.map((h) => h.city)])].sort((a, b) =>
+    a.localeCompare(b, 'es', { sensitivity: 'base' }),
+  )
+  const cityItems = [
+    { value: 'all', label: t.allCities },
+    ...filterCities.map((c) => ({ value: c, label: cityLabel(c, lang) })),
+  ]
 
   const rows = hotels.filter((h) => {
     const q = query.trim().toLowerCase()

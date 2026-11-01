@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { BadgeCheck, Check, ChevronDown, ChevronsDownUp, ChevronsUpDown, Mail, Phone } from 'lucide-react'
+import { toast } from 'sonner'
 import { StatusBadge } from '@/components/reservation-cells'
 import { StayRequestsBox } from '@/components/stay-request-tags'
 import { Button } from '@/components/ui/button'
@@ -59,7 +60,7 @@ function toggle<T>(list: T[], item: T, on: boolean) {
 }
 
 export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmail }: Props) {
-  const { t, lang, reservations, agencyName, updateReservation } = useApp()
+  const { t, lang, reservations, agencyName, updateReservation, hotelById } = useApp()
   const r = reservations.find((x) => x.id === reservationId)
   const [openIds, setOpenIds] = useState<Set<string>>(() =>
     r ? new Set(getStays(r).filter((s) => !isBlockSecured(r, s.id)).map((s) => s.id)) : new Set(),
@@ -93,8 +94,16 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
   }
 
   function assignHotel(stayId: string, hotelId: string | undefined) {
+    if (!r) return
     const next = stays.map((s) => (s.id === stayId ? { ...s, hotelId } : s))
-    save({ stays: next, hotelId: next[0].hotelId })
+    const current = r.negotiation?.[stayId] ?? { steps: [] }
+    const hasRates = current.rate != null || Object.values(current.rates ?? {}).some((v) => v != null)
+    const hotelRates = hotelById(hotelId)?.rates
+    const negotiation =
+      !hasRates && hotelRates && Object.keys(hotelRates).length
+        ? { ...r.negotiation, [stayId]: { ...current, rates: { ...hotelRates }, rate: undefined } }
+        : r.negotiation
+    save({ stays: next, hotelId: next[0].hotelId, negotiation })
   }
 
   return (
@@ -386,7 +395,26 @@ function StayCard({
           </div>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1.5 text-xs font-medium">{t.ratesByType}</legend>
+            <legend className="sr-only">{t.ratesByType}</legend>
+            <div className="flex items-center justify-between gap-2">
+              <span aria-hidden="true" className="text-xs font-medium">
+                {t.ratesByType}
+              </span>
+              {hotel?.rates && Object.keys(hotel.rates).length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => {
+                    onPatch({ rates: { ...hotel.rates }, rate: undefined })
+                    toast.success(t.hotelRatesApplied)
+                  }}
+                >
+                  {t.applyHotelRates}
+                </Button>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {ROOM_TYPES.map(({ key, label }) => {
                 const count = rooms[key]

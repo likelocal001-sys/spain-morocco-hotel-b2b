@@ -26,7 +26,7 @@ export default function SignUpPage() {
     }
     setLoading(true)
     setError(null)
-    const { error: signUpError } = await createClient().auth.signUp({
+    const { data, error: signUpError } = await createClient().auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -47,6 +47,12 @@ export default function SignUpPage() {
       } else {
         setError('회원가입을 완료하지 못했습니다. 잠시 후 다시 시도해주세요. · No se pudo registrar.')
       }
+      setLoading(false)
+      return
+    }
+    // Supabase returns a user with no identities (and sends no email) when the address is already registered.
+    if (data.user && data.user.identities?.length === 0) {
+      setError('이미 가입된 이메일입니다. 로그인해주세요. · Este email ya está registrado, inicia sesión.')
       setLoading(false)
       return
     }

@@ -17,6 +17,7 @@ import {
   nightsBetween,
   paymentPatch,
   roomNights,
+  stayEstimate,
   stayPayments,
 } from '@/lib/format'
 import { useApp } from '@/lib/store'
@@ -45,6 +46,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
   )
   const [voucher, setVoucher] = useState<AttachedFile | undefined>(reservation.voucherFile)
   const [error, setError] = useState<string | null>(null)
+  const [reviewing, setReviewing] = useState(false)
 
   const total = drafts.reduce((sum, d) => sum + (Number(d.amount) || 0), 0)
 
@@ -65,7 +67,11 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
     if (drafts.some((d) => !d.stay.hotelId)) return setError(t.errHotel)
     if (drafts.some((d) => !(Number(d.amount) > 0))) return setError(t.errAmount)
     if (drafts.some((d) => !d.limit)) return setError(t.errLimit)
+    setError(null)
+    setReviewing(true)
+  }
 
+  function commit() {
     const stays = drafts.map((d) => d.stay)
     const changes = Object.fromEntries(
       drafts.map((d) => [d.stay.id, { amount: round2(Number(d.amount)), paymentLimit: d.limit }]),
@@ -95,6 +101,16 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
             {t.roomNights}
           </DialogDescription>
         </DialogHeader>
+        {reviewing ? (
+          <ReviewStep
+            reservation={reservation}
+            drafts={drafts}
+            total={total}
+            hasVoucher={Boolean(voucher)}
+            onBack={() => setReviewing(false)}
+            onConfirm={commit}
+          />
+        ) : (
         <form onSubmit={handleSave} className="flex flex-col gap-4" noValidate>
           <fieldset className="flex flex-col gap-2.5">
             <legend className="mb-1 text-sm font-medium">{t.perHotelPayment} *</legend>
@@ -159,8 +175,86 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
             <Button type="submit">{t.save}</Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+function ReviewStep({
+  reservation,
+  drafts,
+  total,
+  hasVoucher,
+  onBack,
+  onConfirm,
+}: {
+  reservation: Reservation
+  drafts: StayDraft[]
+  total: number
+  hasVoucher: boolean
+  onBack: () => void
+  onConfirm: () => void
+}) {
+  const { t, lang, hotelById } = useApp()
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-sm font-semibold">{t.reviewTitle}</h3>
+        <p className="text-xs text-muted-foreground text-pretty">{t.reviewDesc}</p>
+      </div>
+      <ul className="flex flex-col divide-y rounded-lg border">
+        {drafts.map((d, index) => {
+          const amount = round2(Number(d.amount))
+          const estimate = round2(stayEstimate(reservation, d.stay))
+          const mismatch = estimate > 0 && Math.abs(estimate - amount) >= 0.01
+          return (
+            <li key={d.stay.id} className="flex flex-col gap-1 p-3 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="font-medium">
+                  <span className="mr-1.5 font-mono text-primary">{index + 1}</span>
+                  {hotelById(d.stay.hotelId)?.nameEs}
+                </span>
+                <span className="font-mono font-semibold">{formatEUR(amount, lang)}</span>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span className="font-mono">
+                  {formatShortDate(d.stay.checkIn, lang)} → {formatShortDate(d.stay.checkOut, lang)} · {t.paymentLimit}{' '}
+                  {formatShortDate(d.limit, lang)}
+                </span>
+                {estimate === 0 ? (
+                  <span className="text-warning-foreground">{t.noEstimate}</span>
+                ) : mismatch ? (
+                  <span className="flex items-center gap-1 font-medium text-destructive">
+                    <AlertTriangle className="size-3.5" aria-hidden="true" />
+                    {t.amountMismatch} · {formatEUR(estimate, lang)}
+                  </span>
+                ) : null}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      <div className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2 text-sm">
+        <span className="font-medium">{t.totalAmount}</span>
+        <span className="font-mono text-base font-bold text-primary">{formatEUR(total, lang)}</span>
+      </div>
+      {!hasVoucher && (
+        <p className="flex items-center gap-1.5 rounded-md bg-warning/15 px-3 py-2 text-xs text-warning-foreground">
+          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+          {t.voucherMissingWarn}
+        </p>
+      )}
+      <div className="-mx-4 -mb-4 flex flex-col-reverse gap-2 border-t bg-muted/50 p-4 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" onClick={onBack}>
+          {t.backToEdit}
+        </Button>
+        <Button type="button" onClick={onConfirm}>
+          {t.confirmFinal}
+        </Button>
+      </div>
+    </div>
   )
 }
 

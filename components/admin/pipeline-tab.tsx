@@ -22,13 +22,15 @@ import { blockProgress, formatEUR, getDeadline, negotiationProgress, stayPayment
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
+import { ConfirmAction } from './confirm-action'
 import { ConfirmDialog } from './confirm-dialog'
+import { emailNeedsAttention } from './spanish-email-dialog'
 import { NegotiationWorkspace } from './negotiation-workspace'
 import { PaymentStatusDialog } from './payment-status-dialog'
 import { SpanishEmailDialog } from './spanish-email-dialog'
 
 export function PipelineTab() {
-  const { t, lang, reservations, agencies, agencyName, updateReservation } = useApp()
+  const { t, lang, reservations, agencies, agencyName, updateReservation, hotelById } = useApp()
   const [status, setStatus] = useState<ReservationStatus | 'all'>('all')
   const [agency, setAgency] = useState('all')
   const [query, setQuery] = useState('')
@@ -36,6 +38,7 @@ export function PipelineTab() {
   const [emailing, setEmailing] = useState<Reservation | null>(null)
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [payingId, setPayingId] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState<Reservation | null>(null)
 
   const byAgency = useMemo(
     () => reservations.filter((r) => agency === 'all' || r.agencyId === agency),
@@ -248,11 +251,20 @@ export function PipelineTab() {
                         <Button
                           size="icon-xs"
                           variant="ghost"
-                          aria-label={t.spanishEmail}
-                          title={t.spanishEmail}
+                          aria-label={
+                            emailNeedsAttention(r, hotelById) ? `${t.spanishEmail} · ${t.emailNeedsAttention}` : t.spanishEmail
+                          }
+                          title={emailNeedsAttention(r, hotelById) ? t.emailNeedsAttention : t.spanishEmail}
                           onClick={() => setEmailing(r)}
+                          className="relative"
                         >
                           <Mail />
+                          {emailNeedsAttention(r, hotelById) && (
+                            <span
+                              aria-hidden="true"
+                              className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-destructive"
+                            />
+                          )}
                         </Button>
                       )}
                       {r.status !== 'cancelled' && !r.paid && (
@@ -262,10 +274,7 @@ export function PipelineTab() {
                           className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                           aria-label={t.cancelBooking}
                           title={t.cancelBooking}
-                          onClick={() => {
-                            updateReservation(r.id, { status: 'cancelled' })
-                            toast(t.cancelledToast, { description: r.id })
-                          }}
+                          onClick={() => setCancelling(r)}
                         >
                           <XCircle />
                         </Button>
@@ -296,6 +305,20 @@ export function PipelineTab() {
       )}
       {confirming && <ConfirmDialog reservation={confirming} onClose={() => setConfirming(null)} />}
       {emailing && <SpanishEmailDialog reservation={emailing} onClose={() => setEmailing(null)} />}
+      {cancelling && (
+        <ConfirmAction
+          title={t.cancelBookingTitle}
+          description={`${cancelling.id} · ${cancelling.groupName} — ${t.cancelBookingDesc}`}
+          confirmLabel={t.cancelBooking}
+          destructive
+          onCancel={() => setCancelling(null)}
+          onConfirm={() => {
+            updateReservation(cancelling.id, { status: 'cancelled' })
+            toast(t.cancelledToast, { description: cancelling.id })
+            setCancelling(null)
+          }}
+        />
+      )}
     </section>
   )
 }

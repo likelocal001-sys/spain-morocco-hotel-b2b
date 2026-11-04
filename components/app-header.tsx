@@ -67,14 +67,14 @@ export function AppHeader() {
             ]}
           />
           <div className="flex items-center gap-2 rounded-lg bg-white/10 py-1 pr-1 pl-2.5">
-            {role === 'admin' ? (
+            {role !== 'client' ? (
               <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
             ) : (
               <Building2 className="size-4 shrink-0" aria-hidden="true" />
             )}
             <div className="min-w-0 leading-tight">
               <p className="text-xs font-semibold">
-                {role === 'admin' ? t.roleAdminBadge : agencyName(currentAgencyId)}
+                {role === 'admin' ? t.roleAdminBadge : role === 'staff' ? t.roleStaffBadge : agencyName(currentAgencyId)}
               </p>
               <p className="max-w-40 truncate text-[11px] text-white/70">{profile.email}</p>
             </div>

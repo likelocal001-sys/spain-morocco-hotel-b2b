@@ -1,6 +1,7 @@
 'use client'
 
-import { Building, Calculator, Users, Workflow } from 'lucide-react'
+import { Building, Calculator, Clock, Users, Workflow } from 'lucide-react'
+import { AttendanceTab } from './attendance-tab'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useApp } from '@/lib/store'
 import { BillingTab } from './billing-tab'
@@ -9,7 +10,8 @@ import { MembersTab } from './members-tab'
 import { PipelineTab } from './pipeline-tab'
 
 export function AdminBackoffice() {
-  const { t, members } = useApp()
+  const { t, members, role } = useApp()
+  const isManager = role === 'admin'
   const pendingCount = members.filter((m) => m.role === 'client' && !m.agencyId).length
   return (
     <div className="flex flex-col gap-5">
@@ -28,18 +30,26 @@ export function AdminBackoffice() {
             <Building aria-hidden="true" />
             {t.tabHotels}
           </TabsTrigger>
-          <TabsTrigger value="billing" className="px-3">
-            <Calculator aria-hidden="true" />
-            {t.tabBilling}
-          </TabsTrigger>
-          <TabsTrigger value="members" className="px-3">
-            <Users aria-hidden="true" />
-            {t.tabMembers}
-            {pendingCount > 0 && (
-              <span className="rounded-full bg-warning px-1.5 text-[10px] font-bold text-warning-foreground">
-                {pendingCount}
-              </span>
-            )}
+          {isManager && (
+            <TabsTrigger value="billing" className="px-3">
+              <Calculator aria-hidden="true" />
+              {t.tabBilling}
+            </TabsTrigger>
+          )}
+          {isManager && (
+            <TabsTrigger value="members" className="px-3">
+              <Users aria-hidden="true" />
+              {t.tabMembers}
+              {pendingCount > 0 && (
+                <span className="rounded-full bg-warning px-1.5 text-[10px] font-bold text-warning-foreground">
+                  {pendingCount}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="attendance" className="px-3">
+            <Clock aria-hidden="true" />
+            {t.tabAttendance}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="pipeline">
@@ -48,11 +58,18 @@ export function AdminBackoffice() {
         <TabsContent value="hotels">
           <HotelsTab />
         </TabsContent>
-        <TabsContent value="billing">
-          <BillingTab />
-        </TabsContent>
-        <TabsContent value="members">
-          <MembersTab />
+        {isManager && (
+          <TabsContent value="billing">
+            <BillingTab />
+          </TabsContent>
+        )}
+        {isManager && (
+          <TabsContent value="members">
+            <MembersTab />
+          </TabsContent>
+        )}
+        <TabsContent value="attendance">
+          <AttendanceTab />
         </TabsContent>
       </Tabs>
     </div>

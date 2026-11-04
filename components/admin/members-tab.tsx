@@ -46,7 +46,8 @@ function MemberChangeLog() {
   const { t, lang, agencyName } = useApp()
   const { data } = useSWR(LOG_KEY, fetchLog)
   const agency = (id: string | null) => (id ? agencyName(id) : t.membersNoAgency)
-  const role = (r: string | null) => (r === 'admin' ? t.roleAdminBadge : t.roleClientBadge)
+  const role = (r: string | null) =>
+    r === 'admin' ? t.roleAdminBadge : r === 'staff' ? t.roleStaffBadge : t.roleClientBadge
 
   return (
     <section className="flex flex-col gap-2" aria-labelledby="member-log-title">
@@ -149,7 +150,7 @@ export function MembersTab() {
 
   const describe = (patch: MemberPatch) =>
     'role' in patch
-      ? `${t.membersRole}: ${patch.role === 'admin' ? t.roleAdminBadge : t.roleClientBadge}`
+      ? `${t.membersRole}: ${patch.role === 'admin' ? t.roleAdminBadge : patch.role === 'staff' ? t.roleStaffBadge : t.roleClientBadge}`
       : `${t.membersAgency}: ${patch.agencyId ? agencyName(patch.agencyId) : t.membersNoAgency}`
 
   return (
@@ -233,6 +234,7 @@ export function MembersTab() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="client">{t.roleClientBadge}</SelectItem>
+                        <SelectItem value="staff">{t.roleStaffBadge}</SelectItem>
                         <SelectItem value="admin">{t.roleAdminBadge}</SelectItem>
                       </SelectContent>
                     </Select>
@@ -253,7 +255,11 @@ export function MembersTab() {
                 {pending.email} → {describe(pending.patch)}
               </span>
               <span className="mt-1 block">
-                {pending.patch.role === 'admin' ? t.memberAdminWarn : t.memberChangeWarn}
+                {pending.patch.role === 'admin'
+                  ? t.memberAdminWarn
+                  : pending.patch.role === 'staff'
+                    ? t.memberStaffWarn
+                    : t.memberChangeWarn}
               </span>
             </>
           }

@@ -1,5 +1,5 @@
 export type Lang = 'ko' | 'es'
-export type Role = 'client' | 'admin'
+export type Role = 'client' | 'staff' | 'admin'
 export type ReservationStatus = 'pending' | 'in_progress' | 'confirmed' | 'cancelled'
 export type KnownCity =
   | 'Madrid'

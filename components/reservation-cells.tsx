@@ -141,7 +141,7 @@ export function HotelCell({
                 {hotel ? hotel.nameEs : `${t.unassigned} · ${stay.stars}★`}
               </span>
             </div>
-            {showRequests && <RequestTagChips tags={stay.requestTags ?? []} compact />}
+            {showRequests && <RequestTagChips tags={stay.requestTags ?? []} note={stay.requestNote} compact />}
           </li>
         )
       })}

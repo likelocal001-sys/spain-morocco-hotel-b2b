@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Send } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Clock, Copy, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -11,18 +11,65 @@ import { cityLabel, REQUEST_TAG_LABELS } from '@/lib/i18n'
 import { formatDate, getStays, nightsBetween, totalRooms } from '@/lib/format'
 import type { Hotel, Reservation, Stay } from '@/lib/types'
 import { useApp } from '@/lib/store'
+import { cn } from '@/lib/utils'
 
-function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
+const hasKorean = (text: string) => /[\u3131-\uD79D]/.test(text)
+
+function stayPeticiones(stay: Stay) {
+  const parts = (stay.requestTags ?? []).map((tag) => REQUEST_TAG_LABELS[tag]?.es).filter(Boolean)
+  const note = stay.requestNote?.trim()
+  if (note) parts.push(hasKorean(note) ? `${note} (texto original del cliente)` : note)
+  return parts.join('; ')
+}
+
+function stayDates(stay: Stay) {
   const nights = nightsBetween(stay.checkIn, stay.checkOut)
+  return `entrada ${formatDate(stay.checkIn, 'es')} – salida ${formatDate(stay.checkOut, 'es')} (${nights} noche${nights === 1 ? '' : 's'})`
+}
+
+interface HotelGroup {
+  key: string
+  hotel?: Hotel
+  stays: Stay[]
+}
+
+function groupStaysByHotel(stays: Stay[], hotelById: (id?: string) => Hotel | undefined): HotelGroup[] {
+  const groups: HotelGroup[] = []
+  for (const stay of stays) {
+    const hotel = hotelById(stay.hotelId)
+    const existing = hotel && groups.find((g) => g.hotel?.id === hotel.id)
+    if (existing) existing.stays.push(stay)
+    else groups.push({ key: hotel?.id ?? stay.id, hotel, stays: [stay] })
+  }
+  return groups
+}
+
+function buildSpanishEmail(r: Reservation, group: HotelGroup) {
+  const { hotel, stays } = group
   const roomParts = [
     r.rooms.single && `${r.rooms.single} individual${r.rooms.single > 1 ? 'es' : ''}`,
     r.rooms.twin && `${r.rooms.twin} doble${r.rooms.twin > 1 ? 's' : ''} (twin)`,
     r.rooms.triple && `${r.rooms.triple} triple${r.rooms.triple > 1 ? 's' : ''}`,
   ].filter(Boolean)
-  const requests = (stay.requestTags ?? r.requestTags).map((tag) => REQUEST_TAG_LABELS[tag].es)
-  const hasKorean = /[\u3131-\uD79D]/.test(r.requests)
+  const first = stays[0]
 
-  const subject = `Solicitud de reserva de grupo – ${r.id} (${formatDate(stay.checkIn, 'es')})`
+  const stayLines =
+    stays.length === 1
+      ? [
+          `• Ciudad: ${cityLabel(first.city, 'es')}`,
+          `• Fechas: ${stayDates(first)}`,
+          ...(stayPeticiones(first) ? [`• Peticiones especiales: ${stayPeticiones(first)}`] : []),
+        ]
+      : [
+          `• Ciudad: ${cityLabel(first.city, 'es')}`,
+          '• Estancias:',
+          ...stays.flatMap((s, i) => [
+            `   ${i + 1}) ${stayDates(s)}`,
+            ...(stayPeticiones(s) ? [`      Peticiones especiales: ${stayPeticiones(s)}`] : []),
+          ]),
+        ]
+
+  const subject = `Solicitud de reserva de grupo – ${r.id} (${formatDate(first.checkIn, 'es')})`
   const body = [
     `Estimado equipo comercial${hotel ? ` de ${hotel.nameEs}` : ''}:`,
     '',
@@ -30,13 +77,13 @@ function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
     '',
     `• Referencia: ${r.id}`,
     `• Grupo: ${r.groupName}`,
-    `• Ciudad: ${cityLabel(stay.city, 'es')}`,
-    `• Fechas: entrada ${formatDate(stay.checkIn, 'es')} – salida ${formatDate(stay.checkOut, 'es')} (${nights} noche${nights === 1 ? '' : 's'})`,
+    ...stayLines,
     `• Habitaciones: ${roomParts.join(', ')} — total ${totalRooms(r.rooms)}`,
     `• Régimen: ${r.breakfast ? 'alojamiento y desayuno' : 'solo alojamiento'}`,
-    ...(!hotel ? [`• Categoría deseada: ${stay.stars} estrellas`] : []),
-    ...(requests.length ? [`• Peticiones especiales: ${requests.join('; ')}`] : []),
-    ...(r.requests ? [`• Observaciones${hasKorean ? ' (texto original del cliente)' : ''}: ${r.requests}`] : []),
+    ...(!hotel ? [`• Categoría deseada: ${first.stars} estrellas`] : []),
+    ...(r.requests?.trim()
+      ? [`• Observaciones generales${hasKorean(r.requests) ? ' (texto original del cliente)' : ''}: ${r.requests.trim()}`]
+      : []),
     ...(r.roomingList ? ['• Adjuntamos la rooming list del grupo.'] : []),
     '',
     'Les agradeceríamos que nos indicaran la tarifa neta por habitación y noche, las condiciones de cancelación y la fecha límite de pago (payment limit).',
@@ -51,21 +98,54 @@ function buildSpanishEmail(r: Reservation, stay: Stay, hotel?: Hotel) {
   return { subject, body }
 }
 
-export function SpanishEmailDialog({ reservation, onClose }: { reservation: Reservation; onClose: () => void }) {
-  const { t, lang, hotelById } = useApp()
-  const stays = getStays(reservation)
-  const [stayIndex, setStayIndex] = useState(0)
-  const stay = stays[stayIndex]
-  const hotel = hotelById(stay.hotelId)
-  const [email, setEmail] = useState(() => buildSpanishEmail(reservation, stay, hotel))
+function signatureOf(text: string) {
+  let hash = 5381
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0
+  return (hash >>> 0).toString(36)
+}
 
-  function selectStay(index: number) {
-    setStayIndex(index)
-    setEmail(buildSpanishEmail(reservation, stays[index], hotelById(stays[index].hotelId)))
+type EmailState = 'unsent' | 'sent' | 'changed'
+
+function groupEmailState(r: Reservation, group: HotelGroup): EmailState {
+  const records = group.stays.map((s) => r.negotiation?.[s.id])
+  if (records.some((n) => !n?.emailSentAt)) return 'unsent'
+  const signature = signatureOf(buildSpanishEmail(r, group).body)
+  return records.every((n) => n?.emailSignature === signature) ? 'sent' : 'changed'
+}
+
+export function emailNeedsAttention(r: Reservation, hotelById: (id?: string) => Hotel | undefined) {
+  if (r.status === 'cancelled') return false
+  return groupStaysByHotel(getStays(r), hotelById).some((g) => g.hotel && groupEmailState(r, g) !== 'sent')
+}
+
+export function SpanishEmailDialog({ reservation: initial, onClose }: { reservation: Reservation; onClose: () => void }) {
+  const { t, lang, hotelById, reservations, updateReservation } = useApp()
+  const reservation = reservations.find((r) => r.id === initial.id) ?? initial
+  const groups = groupStaysByHotel(getStays(reservation), hotelById)
+  const [groupIndex, setGroupIndex] = useState(0)
+  const group = groups[groupIndex] ?? groups[0]
+  const hotel = group.hotel
+  const [email, setEmail] = useState(() => buildSpanishEmail(reservation, group))
+
+  function selectGroup(index: number) {
+    setGroupIndex(index)
+    setEmail(buildSpanishEmail(reservation, groups[index]))
   }
 
   const recipients = (hotel?.contacts ?? []).map((c) => c.email).filter(Boolean)
   const mailto = `mailto:${recipients.join(',')}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
+
+  const state = groupEmailState(reservation, group)
+  const sentAt = group.stays.map((s) => reservation.negotiation?.[s.id]?.emailSentAt).filter(Boolean).sort().at(-1)
+
+  function markSent() {
+    const signature = signatureOf(buildSpanishEmail(reservation, group).body)
+    const emailSentAt = new Date().toISOString()
+    const negotiation = { ...reservation.negotiation }
+    for (const s of group.stays) negotiation[s.id] = { ...negotiation[s.id], steps: negotiation[s.id]?.steps ?? [], emailSentAt, emailSignature: signature }
+    updateReservation(reservation.id, { negotiation })
+    toast.success(t.emailMarkedToast, { description: hotel?.nameEs })
+  }
 
   async function copy() {
     await navigator.clipboard.writeText(`${email.subject}\n\n${email.body}`)
@@ -79,23 +159,60 @@ export function SpanishEmailDialog({ reservation, onClose }: { reservation: Rese
           <DialogTitle>{t.emailTitle}</DialogTitle>
           <DialogDescription>{t.emailDesc}</DialogDescription>
         </DialogHeader>
-        {stays.length > 1 && (
+        {groups.length > 1 && (
           <div className="flex flex-wrap gap-1.5" role="group" aria-label={t.itinerary}>
-            {stays.map((s, index) => (
+            {groups.map((g, index) => (
               <Button
-                key={s.id}
+                key={g.key}
                 type="button"
                 size="sm"
-                variant={index === stayIndex ? 'default' : 'outline'}
-                aria-pressed={index === stayIndex}
-                onClick={() => selectStay(index)}
+                variant={index === groupIndex ? 'default' : 'outline'}
+                aria-pressed={index === groupIndex}
+                onClick={() => selectGroup(index)}
               >
                 <span className="font-mono">{index + 1}</span>
-                {hotelById(s.hotelId)?.nameEs ?? `${cityLabel(s.city, lang)} · ${s.stars}★`}
+                {g.hotel?.nameEs ?? `${cityLabel(g.stays[0].city, lang)} · ${g.stays[0].stars}★`}
+                {g.stays.length > 1 && <span className="font-mono text-xs opacity-70">×{g.stays.length}</span>}
+                {g.hotel && groupEmailState(reservation, g) !== 'sent' && (
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-destructive" />
+                )}
               </Button>
             ))}
           </div>
         )}
+        <div
+          role="status"
+          className={cn(
+            'flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm',
+            state === 'sent' && 'bg-success/10 text-success',
+            state === 'unsent' && 'bg-muted text-muted-foreground',
+            state === 'changed' && 'bg-destructive/10 text-destructive',
+          )}
+        >
+          <span className="flex items-center gap-1.5 font-medium">
+            {state === 'sent' ? (
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+            ) : state === 'changed' ? (
+              <AlertTriangle className="size-4" aria-hidden="true" />
+            ) : (
+              <Clock className="size-4" aria-hidden="true" />
+            )}
+            {state === 'sent' ? t.emailSent : state === 'changed' ? t.emailChanged : t.emailUnsent}
+            {sentAt && state !== 'unsent' && (
+              <span className="font-mono text-xs font-normal opacity-80">
+                {new Date(sentAt).toLocaleString(lang === 'ko' ? 'ko-KR' : 'es-ES', {
+                  dateStyle: 'short',
+                  timeStyle: 'short',
+                })}
+              </span>
+            )}
+          </span>
+          {state !== 'sent' && (
+            <Button type="button" size="sm" variant="outline" className="bg-background" onClick={markSent}>
+              {t.markEmailSent}
+            </Button>
+          )}
+        </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="email-to" className="text-xs text-muted-foreground">
             Para

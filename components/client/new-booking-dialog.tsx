@@ -88,6 +88,8 @@ function initialForm(reservation?: Reservation) {
         hotelId: s.hotelId ?? 'none',
         customCity: !(CITIES as string[]).includes(s.city),
         requestTags: s.requestTags ?? [],
+        requestNote: s.requestNote ?? '',
+        noteOpen: Boolean(s.requestNote?.trim()),
       })),
       rooms: { ...reservation.rooms } as RoomCounts,
       breakfast: reservation.breakfast,
@@ -155,6 +157,7 @@ export function NewBookingDialog({
       stars: Number(s.stars),
       hotelId: s.hotelId === 'none' ? undefined : s.hotelId,
       requestTags: s.requestTags,
+      ...(s.requestNote.trim() ? { requestNote: s.requestNote.trim() } : {}),
     }))
     const allRequestTags = [...new Set(stays.flatMap((s) => s.requestTags ?? []))]
     const first = stays[0]

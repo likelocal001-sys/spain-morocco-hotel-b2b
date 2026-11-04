@@ -22,7 +22,7 @@ export default async function Page() {
     email: data?.email ?? user.email ?? '',
     fullName: data?.full_name ?? null,
     company: data?.company ?? null,
-    role: data?.role === 'admin' ? 'admin' : 'client',
+    role: data?.role === 'admin' || data?.role === 'staff' ? data.role : 'client',
     agencyId: data?.agency_id ?? null,
   }
 

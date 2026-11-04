@@ -31,6 +31,7 @@ import {
 } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { ConfirmAction } from './confirm-action'
 import type {
   GroupCheck,
   NegotiationStep,
@@ -287,6 +288,19 @@ function StayCard({
   const estimate = perNight > 0 ? perNight * nights : undefined
   const fieldId = `neg-${stay.id}`
   const secured = negotiation.steps.includes('optionHeld')
+  const [confirmingOverwrite, setConfirmingOverwrite] = useState(false)
+  const hotelRates = hotel?.rates ?? {}
+  const hasHotelRates = Object.values(hotelRates).some((v) => v != null)
+  const usedTypes = ROOM_TYPES.filter(({ key }) => rooms[key] > 0)
+  const isDefault = (type: RoomType) => hotelRates[type] != null && rateFor(type) === hotelRates[type]
+  const anyEdited = ROOM_TYPES.some(({ key }) => rateFor(key) != null && !isDefault(key))
+  const untouched = hasHotelRates && usedTypes.length > 0 && usedTypes.every(({ key }) => isDefault(key))
+
+  function applyHotelRates() {
+    onPatch({ rates: { ...hotelRates }, rate: undefined })
+    toast.success(t.hotelRatesApplied)
+    setConfirmingOverwrite(false)
+  }
 
   return (
     <li
@@ -339,7 +353,7 @@ function StayCard({
 
       {open && (
       <div id={`${fieldId}-body`} className="flex flex-col gap-3 px-4 pb-4">
-      <StayRequestsBox tags={stay.requestTags ?? []} />
+      <StayRequestsBox tags={stay.requestTags ?? []} note={stay.requestNote} />
 
       <div className="grid gap-4 md:grid-cols-[1fr_1.1fr]">
         <div className="flex flex-col gap-3">
@@ -400,16 +414,13 @@ function StayCard({
               <span aria-hidden="true" className="text-xs font-medium">
                 {t.ratesByType}
               </span>
-              {hotel?.rates && Object.keys(hotel.rates).length > 0 && (
+              {hasHotelRates && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className="h-7 px-2 text-xs"
-                  onClick={() => {
-                    onPatch({ rates: { ...hotel.rates }, rate: undefined })
-                    toast.success(t.hotelRatesApplied)
-                  }}
+                  onClick={() => (anyEdited ? setConfirmingOverwrite(true) : applyHotelRates())}
                 >
                   {t.applyHotelRates}
                 </Button>
@@ -438,10 +449,35 @@ function StayCard({
                       }}
                       className="h-8 font-mono"
                     />
+                    {hotelRates[key] != null && rateFor(key) != null && (
+                      <span
+                        className={cn(
+                          'text-[10px]',
+                          isDefault(key) ? 'text-muted-foreground' : 'font-medium text-primary',
+                        )}
+                      >
+                        {isDefault(key) ? t.rateDefault : `${t.rateEdited} · ${formatEUR(hotelRates[key]!, lang)}`}
+                      </span>
+                    )}
                   </div>
                 )
               })}
             </div>
+            {untouched && (
+              <p className="rounded-md bg-warning/15 px-2.5 py-1.5 text-[11px] text-warning-foreground text-pretty">
+                {t.ratesUntouchedWarn}
+              </p>
+            )}
+            {confirmingOverwrite && (
+              <ConfirmAction
+                title={t.overwriteRatesTitle}
+                description={t.overwriteRatesDesc}
+                confirmLabel={t.overwrite}
+                destructive
+                onCancel={() => setConfirmingOverwrite(false)}
+                onConfirm={applyHotelRates}
+              />
+            )}
             <div className="flex items-center justify-between rounded-md bg-muted/50 px-2.5 py-1.5 text-xs">
               <span className="font-medium">{t.estimate}</span>
               <span className="font-mono tabular-nums">

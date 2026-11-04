@@ -4,7 +4,7 @@ import { BellRing, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { formatShortDate, nightsBetween } from '@/lib/format'
-import { REQUEST_TAG_LABELS, cityLabel } from '@/lib/i18n'
+import { cityLabel, stayRequestLabels } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { BookingSnapshot, Lang, Reservation, Revision, Stay } from '@/lib/types'
@@ -116,7 +116,7 @@ export function RevisionPanel({ reservation }: { reservation: Reservation }) {
   }
 
   function describeStay(stay: Stay) {
-    const tags = (stay.requestTags ?? []).map((tag) => REQUEST_TAG_LABELS[tag][lang]).join(', ')
+    const tags = stayRequestLabels(stay, lang).join(', ')
     return [
       `${cityLabel(stay.city, lang)} ${formatShortDate(stay.checkIn, lang)}–${formatShortDate(stay.checkOut, lang)}`,
       `${nightsBetween(stay.checkIn, stay.checkOut)}${t.nightsUnit} · ${stay.stars}★`,

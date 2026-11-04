@@ -3,7 +3,7 @@
 import { Download, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { cityLabel, REQUEST_TAG_LABELS } from '@/lib/i18n'
+import { cityLabel, stayRequestLabels } from '@/lib/i18n'
 import { formatDate, formatEUR, getStays, nightsBetween, stayPayments, toISODate, totalRooms } from '@/lib/format'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
@@ -153,6 +153,7 @@ export function DocumentDialog({
                 <ol className="flex flex-col gap-1">
                   {stays.map((stay, index) => {
                     const hotel = hotelById(stay.hotelId)
+                    const stayRequests = kind === 'voucher' ? stayRequestLabels(stay, lang) : []
                     return (
                       <li key={stay.id}>
                         <span className="font-mono text-muted-foreground">{index + 1}. </span>
@@ -162,6 +163,12 @@ export function DocumentDialog({
                           {nightsBetween(stay.checkIn, stay.checkOut)}
                           {t.nightsUnit})
                         </span>
+                        {stayRequests.length > 0 && (
+                          <span className="mt-1 block rounded bg-warning/15 px-2 py-1 text-xs font-normal">
+                            <span className="font-semibold">{t.requests}: </span>
+                            {stayRequests.join(', ')}
+                          </span>
+                        )}
                       </li>
                     )
                   })}
@@ -177,13 +184,8 @@ export function DocumentDialog({
               value={`Single ${single} · Twin ${twin} · Triple ${triple} = ${totalRooms(reservation.rooms)}${t.roomsUnit}`}
             />
             <DocRow label={t.board} value={reservation.breakfast ? t.boardBB : t.boardRO} />
-            {kind === 'voucher' && (reservation.requestTags.length > 0 || reservation.requests) && (
-              <DocRow
-                label={t.requests}
-                value={[...reservation.requestTags.map((tag) => REQUEST_TAG_LABELS[tag][lang]), reservation.requests]
-                  .filter(Boolean)
-                  .join(', ')}
-              />
+            {kind === 'voucher' && reservation.requests?.trim() && (
+              <DocRow label={t.commonRequests} value={reservation.requests} />
             )}
           </dl>
           {kind === 'payment' && <HotelPaymentList reservation={reservation} />}

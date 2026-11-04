@@ -5,15 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cityLabel, stayRequestLabels } from '@/lib/i18n'
 import { formatDate, formatEUR, getStays, nightsBetween, stayPayments, toISODate, totalRooms } from '@/lib/format'
+import { printElement } from '@/lib/print'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation } from '@/lib/types'
 
 export type DocumentKind = 'voucher' | 'payment'
 
-export function DocRow({ label, value }: { label: string; value: React.ReactNode }) {
+export function DocRow({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[120px_1fr] gap-3 border-b border-dashed py-2 text-sm last:border-0">
+    <div className="grid grid-cols-[140px_1fr] gap-3 border-b border-dashed py-2 text-sm last:border-0">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="font-medium">{value}</dd>
     </div>
@@ -37,10 +38,16 @@ export function DocHeader({ title, subtitle }: { title: string; subtitle: string
   )
 }
 
-export function PrintButton() {
+export function PrintButton({ title }: { title?: string }) {
   const { t } = useApp()
+  const handlePrint = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const scope = event.currentTarget.closest('[data-slot="dialog-content"], [role="dialog"]') ?? document
+    const area = scope.querySelector<HTMLElement>('.print-area')
+    if (area) printElement(area, title)
+    else window.print()
+  }
   return (
-    <Button onClick={() => window.print()} className="no-print">
+    <Button onClick={handlePrint} className="no-print">
       <Printer aria-hidden="true" />
       {t.print}
     </Button>

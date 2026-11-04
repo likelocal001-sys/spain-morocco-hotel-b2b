@@ -4,6 +4,7 @@ import { CheckCircle2, Clock, AlertTriangle, CircleDashed } from 'lucide-react'
 import { DocRow, PrintButton } from '@/components/document-dialog'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatDate, formatEUR, formatMonth } from '@/lib/format'
+import { dictionaries } from '@/lib/i18n'
 import { settlementKey, useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { CommissionSettlement } from '@/lib/types'
@@ -56,6 +57,15 @@ export function CommissionStateBadge({ state }: { state: CommissionState }) {
   )
 }
 
+function BiLabel({ ko, es }: { ko: string; es: string }) {
+  return (
+    <span className="flex flex-col">
+      <span>{ko}</span>
+      <span className="text-xs font-normal text-muted-foreground">{es}</span>
+    </span>
+  )
+}
+
 export function ReceiptDialog({
   settlement,
   open,
@@ -65,9 +75,12 @@ export function ReceiptDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { t, lang, agencyName } = useApp()
+  const { t, agencyName } = useApp()
   if (!settlement?.receiptNo) return null
   const receivedDate = settlement.receivedAt?.slice(0, 10) ?? ''
+  const ko = dictionaries.ko
+  const es = dictionaries.es
+  const both = (key: 'receivedFrom' | 'receiptPeriod' | 'receiptFor' | 'receivedOn') => <BiLabel ko={ko[key]} es={es[key]} />
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -81,29 +94,47 @@ export function ReceiptDialog({
           <div className="flex items-start justify-between gap-4 border-b-2 border-primary pb-4">
             <div>
               <p className="font-mono text-xs font-bold tracking-widest text-primary">SP-MOROCCO HOTEL DESK</p>
-              <h2 className="mt-1 text-xl font-bold">RECEIPT · {t.receiptTitle}</h2>
+              <h2 className="mt-1 text-xl font-bold">{ko.receiptTitle}</h2>
+              <p className="text-sm font-medium text-muted-foreground">{es.receiptTitle}</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">
-              <p>{t.receiptNo}</p>
+              <p>
+                {ko.receiptNo} / {es.receiptNo}
+              </p>
               <p className="font-mono text-sm font-semibold text-foreground">{settlement.receiptNo}</p>
             </div>
           </div>
 
           <div className="my-5 flex flex-col items-center gap-1 rounded-lg bg-primary/10 px-4 py-5 text-center">
-            <p className="text-xs text-muted-foreground">{t.receiptAmount}</p>
+            <p className="text-xs text-muted-foreground">
+              {ko.receiptAmount} / {es.receiptAmount}
+            </p>
             <p className="font-mono text-3xl font-bold text-primary tabular-nums">
-              {formatEUR(settlement.receivedAmount ?? 0, lang)}
+              {formatEUR(settlement.receivedAmount ?? 0, 'es')}
             </p>
           </div>
 
           <dl>
-            <DocRow label={t.receivedFrom} value={agencyName(settlement.agencyId)} />
-            <DocRow label={t.receiptPeriod} value={formatMonth(settlement.month, lang)} />
-            <DocRow label={t.receiptFor} value={t.receiptForValue} />
-            <DocRow label={t.receivedOn} value={<span className="font-mono">{formatDate(receivedDate, lang)}</span>} />
+            <DocRow label={both('receivedFrom')} value={agencyName(settlement.agencyId)} />
+            <DocRow
+              label={both('receiptPeriod')}
+              value={<BiLabel ko={formatMonth(settlement.month, 'ko')} es={formatMonth(settlement.month, 'es')} />}
+            />
+            <DocRow label={both('receiptFor')} value={<BiLabel ko={ko.receiptForValue} es={es.receiptForValue} />} />
+            <DocRow
+              label={both('receivedOn')}
+              value={
+                <span className="font-mono">
+                  <BiLabel ko={formatDate(receivedDate, 'ko')} es={formatDate(receivedDate, 'es')} />
+                </span>
+              }
+            />
           </dl>
 
-          <p className="mt-6 text-center text-sm">{t.receiptNote}</p>
+          <div className="mt-6 flex flex-col gap-1 text-center text-sm">
+            <p>{ko.receiptNote}</p>
+            <p className="text-muted-foreground">{es.receiptNote}</p>
+          </div>
           <div className="mt-6 flex justify-end">
             <div className="flex flex-col items-center gap-1 rounded-md border-2 border-primary/60 px-4 py-2 text-primary">
               <span className="font-mono text-[11px] font-bold tracking-widest">PAID</span>

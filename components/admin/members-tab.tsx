@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import useSWR, { useSWRConfig } from 'swr'
@@ -70,10 +70,16 @@ function MemberChangeLog() {
                 <span className="min-w-0 flex-1">
                   <span className="font-medium">{row.member_email}</span>{' '}
                   <span className="text-muted-foreground">
+                    {row.new_role === 'deleted' ? (
+                      <span className="font-medium text-destructive">{t.memberLogDeleted}</span>
+                    ) : (
+                      <>
                     {row.old_agency_id !== row.new_agency_id &&
                       `${agency(row.old_agency_id)} → ${agency(row.new_agency_id)}`}
                     {row.old_agency_id !== row.new_agency_id && row.old_role !== row.new_role && ' · '}
                     {row.old_role !== row.new_role && `${role(row.old_role)} → ${role(row.new_role)}`}
+                      </>
+                    )}
                   </span>
                 </span>
                 <span className="shrink-0 text-xs text-muted-foreground">
@@ -126,7 +132,10 @@ function NewAgencyForm() {
 }
 
 export function MembersTab() {
-  const { t, members, agencies, agencyName, updateMember, profile } = useApp()
+  const { t, members, agencies, agencyName, updateMember, deleteMember, profile } = useApp()
+  const [deleting, setDeleting] = useState<{ id: string; email: string; name: string } | null>(null)
+  const [deleteText, setDeleteText] = useState('')
+  const adminCount = members.filter((m) => m.role === 'admin').length
   const sorted = [...members].sort(
     (a, b) => Number(Boolean(a.agencyId) || a.role === 'admin') - Number(Boolean(b.agencyId) || b.role === 'admin'),
   )
@@ -175,12 +184,15 @@ export function MembersTab() {
               <TableHead>{t.membersEmail}</TableHead>
               <TableHead className="w-64">{t.membersAgency}</TableHead>
               <TableHead className="w-44">{t.membersRole}</TableHead>
+              <TableHead className="w-24">
+                <span className="sr-only">{t.memberDelete}</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sorted.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                   {t.membersEmpty}
                 </TableCell>
               </TableRow>
@@ -239,6 +251,23 @@ export function MembersTab() {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      disabled={isSelf || (member.role === 'admin' && adminCount <= 1)}
+                      aria-label={`${member.email} ${t.memberDelete}`}
+                      onClick={() => {
+                        setDeleteText('')
+                        setDeleting({ id: member.id, email: member.email, name: member.fullName || member.email })
+                      }}
+                    >
+                      <Trash2 aria-hidden="true" />
+                      {t.memberDelete}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               )
             })}
@@ -272,6 +301,47 @@ export function MembersTab() {
             save(id, patch)
           }}
         />
+      )}
+
+      {deleting && (
+        <ConfirmAction
+          title={t.memberDeleteTitle}
+          description={
+            <>
+              <span className="block font-medium text-foreground">
+                {deleting.name} · {deleting.email}
+              </span>
+              <span className="mt-1 block">{t.memberDeleteWarn}</span>
+            </>
+          }
+          confirmLabel={t.memberDeleteConfirm}
+          destructive
+          confirmDisabled={deleteText.trim().toLowerCase() !== deleting.email.toLowerCase()}
+          onCancel={() => setDeleting(null)}
+          onConfirm={async () => {
+            if (deleteText.trim().toLowerCase() !== deleting.email.toLowerCase()) return
+            const { id } = deleting
+            setDeleting(null)
+            if (await deleteMember(id)) {
+              toast.success(t.memberDeleted)
+              mutate(LOG_KEY)
+            }
+          }}
+        >
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="delete-confirm-email" className="text-sm">
+              {t.memberDeleteType}
+            </Label>
+            <Input
+              id="delete-confirm-email"
+              autoComplete="off"
+              placeholder={deleting.email}
+              value={deleteText}
+              onChange={(e) => setDeleteText(e.target.value)}
+              aria-invalid={deleteText.length > 0 && deleteText.trim().toLowerCase() !== deleting.email.toLowerCase()}
+            />
+          </div>
+        </ConfirmAction>
       )}
 
       <MemberChangeLog />

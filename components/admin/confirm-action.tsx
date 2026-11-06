@@ -9,6 +9,7 @@ export function ConfirmAction({
   description,
   confirmLabel,
   destructive,
+  confirmDisabled,
   children,
   onConfirm,
   onCancel,
@@ -17,6 +18,7 @@ export function ConfirmAction({
   description?: React.ReactNode
   confirmLabel: string
   destructive?: boolean
+  confirmDisabled?: boolean
   children?: React.ReactNode
   onConfirm: () => void
   onCancel: () => void
@@ -34,7 +36,12 @@ export function ConfirmAction({
           <Button type="button" variant="outline" onClick={onCancel}>
             {t.goBack}
           </Button>
-          <Button type="button" variant={destructive ? 'destructive' : 'default'} onClick={onConfirm}>
+          <Button
+            type="button"
+            variant={destructive ? 'destructive' : 'default'}
+            disabled={confirmDisabled}
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </Button>
         </div>

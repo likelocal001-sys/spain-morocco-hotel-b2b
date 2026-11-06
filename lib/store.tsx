@@ -52,6 +52,7 @@ interface AppContextValue {
   confirmCommissionReceived: (agencyId: string, month: string) => void
   members: Profile[]
   updateMember: (id: string, patch: { agencyId?: string | null; role?: Role }) => Promise<boolean>
+  deleteMember: (id: string) => Promise<boolean>
   createAgency: (nameKo: string, nameEs: string) => Promise<Agency | null>
 }
 
@@ -347,6 +348,19 @@ export function AppProvider({ profile, children }: { profile: Profile; children:
     [mutateMembers, failed],
   )
 
+  const deleteMember = useCallback(
+    async (id: string) => {
+      const { error } = await supabase().rpc('delete_member', { p_id: id })
+      if (error) {
+        failed(error)
+        return false
+      }
+      mutateMembers()
+      return true
+    },
+    [mutateMembers, failed],
+  )
+
   const createAgency = useCallback(
     async (nameKo: string, nameEs: string) => {
       const base = nameEs
@@ -396,6 +410,7 @@ export function AppProvider({ profile, children }: { profile: Profile; children:
       confirmCommissionReceived,
       members,
       updateMember,
+      deleteMember,
       createAgency,
     }),
     [
@@ -425,6 +440,7 @@ export function AppProvider({ profile, children }: { profile: Profile; children:
       confirmCommissionReceived,
       members,
       updateMember,
+      deleteMember,
       createAgency,
     ],
   )

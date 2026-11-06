@@ -6,6 +6,7 @@ import { DeadlineCell, HotelCell, RoomsCell, StatusBadge, StayCell } from '@/com
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { getDeadline, stayPayments, unseenRevisions } from '@/lib/format'
+import { useAttachmentDownload } from '@/hooks/use-attachment-download'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation } from '@/lib/types'
@@ -22,6 +23,7 @@ export function ClientReservationsTable({
   onOpenPayments: (reservation: Reservation) => void
 }) {
   const { t } = useApp()
+  const download = useAttachmentDownload()
 
   if (reservations.length === 0) {
     return <p className="px-4 py-12 text-center text-sm text-muted-foreground">{t.noResults}</p>
@@ -122,8 +124,7 @@ export function ClientReservationsTable({
                       size="icon-xs"
                       aria-label={`${t.roomingList}: ${r.roomingList.name}`}
                       title={r.roomingList.name}
-                      nativeButton={false}
-                      render={<a href={r.roomingList.url ?? '#'} download={r.roomingList.name} />}
+                      onClick={() => r.roomingList && download(r.roomingList)}
                     >
                       <FileSpreadsheet />
                     </Button>

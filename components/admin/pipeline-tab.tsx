@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { blockProgress, formatEUR, getDeadline, negotiationProgress, stayPayments, unseenRevisions } from '@/lib/format'
+import { useAttachmentDownload } from '@/hooks/use-attachment-download'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
@@ -31,6 +32,7 @@ import { SpanishEmailDialog } from './spanish-email-dialog'
 
 export function PipelineTab() {
   const { t, lang, reservations, agencies, agencyName, updateReservation, hotelById } = useApp()
+  const download = useAttachmentDownload()
   const [status, setStatus] = useState<ReservationStatus | 'all'>('all')
   const [agency, setAgency] = useState('all')
   const [query, setQuery] = useState('')
@@ -169,14 +171,14 @@ export function PipelineTab() {
                       </div>
                     )}
                     {r.roomingList && (
-                      <a
-                        href={r.roomingList.url ?? '#'}
-                        download={r.roomingList.name}
-                        className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                      <button
+                        type="button"
+                        onClick={() => r.roomingList && download(r.roomingList)}
+                        className="mt-0.5 inline-flex items-center gap-1 text-left text-[11px] text-primary hover:underline"
                       >
-                        <FileSpreadsheet className="size-3" aria-hidden="true" />
+                        <FileSpreadsheet className="size-3 shrink-0" aria-hidden="true" />
                         {r.roomingList.name}
-                      </a>
+                      </button>
                     )}
                   </TableCell>
                   <TableCell>

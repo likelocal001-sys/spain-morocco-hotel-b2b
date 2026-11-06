@@ -44,7 +44,8 @@ export interface AttachedFile {
   name: string
   size: number
   url?: string
-}
+  path?: string
+  }
 
 export type RoomCounts = Record<RoomType, number>
 

@@ -1,14 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertTriangle, FileCheck2, Landmark, Upload, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, FileCheck2, Landmark, Upload, Wand2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { uploadAttachment } from '@/lib/attachments'
+import { uploadAttachment, validateAttachment } from '@/lib/attachments'
 import { cityLabel } from '@/lib/i18n'
 import {
   defaultStayLimit,
@@ -18,7 +19,7 @@ import {
   nightsBetween,
   paymentPatch,
   roomNights,
-  stayEstimate,
+  stayEstimateBreakdown,
   stayPayments,
 } from '@/lib/format'
 import { useApp } from '@/lib/store'
@@ -33,12 +34,45 @@ interface StayDraft {
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-export function ConfirmDialog({ reservation, onClose }: { reservation: Reservation; onClose: () => void }) {
-  const { t, lang, hotels, hotelById, updateReservation } = useApp()
+type AmountCheck =
+  | { kind: 'match'; estimate: number }
+  | { kind: 'mismatch'; estimate: number; diff: number }
+  | { kind: 'incomplete'; estimate: number }
+  | { kind: 'none' }
+
+/**
+ * Compares the amount typed for a stay with the negotiated estimate (rate x rooms x nights).
+ * "incomplete" means some booked room types still have no negotiated rate.
+ */
+function checkAmount(reservation: Reservation, stay: Stay, amount: number): AmountCheck {
+  const b = stayEstimateBreakdown(reservation, stay)
+  if (b.total <= 0) return { kind: 'none' }
+  if (b.missing.length) return { kind: 'incomplete', estimate: b.total }
+  const diff = round2(amount - b.total)
+  return Math.abs(diff) < 0.01 ? { kind: 'match', estimate: b.total } : { kind: 'mismatch', estimate: b.total, diff }
+}
+
+/** Saved amount wins (editing a confirmation); otherwise start from the negotiated estimate. */
+function initialAmount(reservation: Reservation, stay: Stay, fallback?: number) {
+  const saved = reservation.negotiation?.[stay.id]?.amount ?? (reservation.status === 'confirmed' ? fallback : undefined)
+  const amount = saved ?? (stayEstimateBreakdown(reservation, stay).total || fallback)
+  return amount ? round2(amount).toString() : ''
+}
+
+/** Hotel picked in the confirm dialog differs from the one whose rates were negotiated. */
+function negotiatedHotelChanged(reservation: Reservation, stay: Stay) {
+  const original = reservation.stays?.find((s) => s.id === stay.id)?.hotelId ?? reservation.hotelId
+  return Boolean(original && stay.hotelId && original !== stay.hotelId && stayEstimateBreakdown(reservation, stay).total > 0)
+}
+
+export function ConfirmDialog({ reservation: initial, onClose }: { reservation: Reservation; onClose: () => void }) {
+  const { t, lang, hotels, hotelById, reservations, updateReservation } = useApp()
+  // Read the latest copy: rates may have been edited in the negotiation workspace just before opening.
+  const reservation = reservations.find((r) => r.id === initial.id) ?? initial
   const [drafts, setDrafts] = useState<StayDraft[]>(() =>
     stayPayments(reservation).map((p) => ({
       stay: p.stay,
-      amount: p.amount ? round2(p.amount).toString() : '',
+      amount: initialAmount(reservation, p.stay, p.amount),
       limit:
         reservation.negotiation?.[p.stay.id]?.paymentLimit ??
         defaultStayLimit(p.stay.checkIn, hotelById(p.stay.hotelId)?.paymentDaysBefore),
@@ -123,6 +157,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
                 draft={draft}
                 hotels={hotels}
                 hotel={hotelById(draft.stay.hotelId)}
+                reservation={reservation}
                 onHotel={(id) => selectHotel(draft, id)}
                 onAmount={(amount) => patchDraft(draft.stay.id, { amount })}
                 onLimit={(limit) => patchDraft(draft.stay.id, { limit, limitTouched: true })}
@@ -155,13 +190,18 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
                 {uploading ? t.uploading : `${t.chooseFile} (.pdf)`}
                 <input
                   type="file"
-                  accept=".pdf,image/*"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp"
                   className="sr-only"
                   disabled={uploading}
                   onChange={async (e) => {
                     const file = e.target.files?.[0]
                     e.target.value = ''
                     if (!file) return
+                    const problem = validateAttachment(file, 'voucher')
+                    if (problem) {
+                      setError(problem === 'type' ? t.errVoucherFile : t.errFileSize)
+                      return
+                    }
                     setUploading(true)
                     setError(null)
                     try {
@@ -173,7 +213,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
                     }
                   }}
                 />
-                </label>
+              </label>
             )}
           </div>
           {error && (
@@ -210,6 +250,11 @@ function ReviewStep({
   onConfirm: () => void
 }) {
   const { t, lang, hotelById } = useApp()
+  const [acknowledged, setAcknowledged] = useState(false)
+  const checks = drafts.map((d) => checkAmount(reservation, d.stay, round2(Number(d.amount))))
+  const hotelChanged = drafts.map((d) => negotiatedHotelChanged(reservation, d.stay))
+  const needsAck = checks.some((c) => c.kind !== 'match') || hotelChanged.some(Boolean)
+  const estimatedTotal = round2(checks.reduce((sum, c) => sum + (c.kind === 'none' ? 0 : c.estimate), 0))
 
   return (
     <div className="flex flex-col gap-4">
@@ -220,8 +265,6 @@ function ReviewStep({
       <ul className="flex flex-col divide-y rounded-lg border">
         {drafts.map((d, index) => {
           const amount = round2(Number(d.amount))
-          const estimate = round2(stayEstimate(reservation, d.stay))
-          const mismatch = estimate > 0 && Math.abs(estimate - amount) >= 0.01
           return (
             <li key={d.stay.id} className="flex flex-col gap-1 p-3 text-sm">
               <div className="flex items-baseline justify-between gap-3">
@@ -236,23 +279,39 @@ function ReviewStep({
                   {formatShortDate(d.stay.checkIn, lang)} → {formatShortDate(d.stay.checkOut, lang)} · {t.paymentLimit}{' '}
                   {formatShortDate(d.limit, lang)}
                 </span>
-                {estimate === 0 ? (
-                  <span className="text-warning-foreground">{t.noEstimate}</span>
-                ) : mismatch ? (
-                  <span className="flex items-center gap-1 font-medium text-destructive">
-                    <AlertTriangle className="size-3.5" aria-hidden="true" />
-                    {t.amountMismatch} · {formatEUR(estimate, lang)}
-                  </span>
-                ) : null}
+                <AmountCheckBadge check={checks[index]} />
               </div>
+              {hotelChanged[index] && (
+                <p className="flex items-center gap-1 text-xs font-medium text-destructive">
+                  <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+                  {t.hotelChangedWarn}
+                </p>
+              )}
             </li>
           )
         })}
       </ul>
-      <div className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2 text-sm">
-        <span className="font-medium">{t.totalAmount}</span>
-        <span className="font-mono text-base font-bold text-primary">{formatEUR(total, lang)}</span>
-      </div>
+      <dl className="flex flex-col gap-1 rounded-lg bg-secondary px-3 py-2 text-sm">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <dt>{t.estimatedTotal}</dt>
+          <dd className="font-mono">{estimatedTotal > 0 ? formatEUR(estimatedTotal, lang) : '—'}</dd>
+        </div>
+        <div className="flex items-center justify-between">
+          <dt className="font-medium">{t.totalAmount}</dt>
+          <dd className="font-mono text-base font-bold text-primary">{formatEUR(total, lang)}</dd>
+        </div>
+      </dl>
+      {needsAck ? (
+        <Label className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs font-normal leading-relaxed">
+          <Checkbox checked={acknowledged} onCheckedChange={(checked) => setAcknowledged(checked)} className="mt-0.5" />
+          {t.ackAmountMismatch}
+        </Label>
+      ) : (
+        <p className="flex items-center gap-1.5 rounded-md bg-success/10 px-3 py-2 text-xs font-medium text-success">
+          <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+          {t.allAmountsMatch}
+        </p>
+      )}
       {!hasVoucher && (
         <p className="flex items-center gap-1.5 rounded-md bg-warning/15 px-3 py-2 text-xs text-warning-foreground">
           <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
@@ -263,7 +322,7 @@ function ReviewStep({
         <Button type="button" variant="outline" onClick={onBack}>
           {t.backToEdit}
         </Button>
-        <Button type="button" onClick={onConfirm}>
+        <Button type="button" onClick={onConfirm} disabled={needsAck && !acknowledged}>
           {t.confirmFinal}
         </Button>
       </div>
@@ -276,6 +335,7 @@ function StayPaymentRow({
   draft,
   hotels,
   hotel,
+  reservation,
   onHotel,
   onAmount,
   onLimit,
@@ -284,6 +344,7 @@ function StayPaymentRow({
   draft: StayDraft
   hotels: Hotel[]
   hotel?: Hotel
+  reservation: Reservation
   onHotel: (id: string) => void
   onAmount: (v: string) => void
   onLimit: (v: string) => void
@@ -374,10 +435,90 @@ function StayPaymentRow({
           />
         </div>
       </div>
+      <EstimateCheck reservation={reservation} stay={stay} amount={draft.amount} onApply={onAmount} />
       <p id={`${base}-limit-hint`} className="text-[11px] text-muted-foreground">
         {t.autoLimitHint}
         {hotel?.paymentDaysBefore !== undefined && ` (D-${hotel.paymentDaysBefore})`}
       </p>
+    </div>
+  )
+}
+
+function AmountCheckBadge({ check }: { check: AmountCheck }) {
+  const { t, lang } = useApp()
+  if (check.kind === 'match')
+    return (
+      <span className="flex items-center gap-1 font-medium text-success">
+        <CheckCircle2 className="size-3.5" aria-hidden="true" />
+        {t.amountMatches}
+      </span>
+    )
+  if (check.kind === 'mismatch')
+    return (
+      <span className="flex items-center gap-1 font-medium text-destructive">
+        <AlertTriangle className="size-3.5" aria-hidden="true" />
+        {t.amountMismatch} · {formatEUR(check.estimate, lang)} ({check.diff > 0 ? '+' : ''}
+        {formatEUR(check.diff, lang)})
+      </span>
+    )
+  if (check.kind === 'incomplete')
+    return (
+      <span className="flex items-center gap-1 font-medium text-warning-foreground">
+        <AlertTriangle className="size-3.5" aria-hidden="true" />
+        {t.estimateIncomplete}
+      </span>
+    )
+  return <span className="text-warning-foreground">{t.noEstimate}</span>
+}
+
+function EstimateCheck({
+  reservation,
+  stay,
+  amount,
+  onApply,
+}: {
+  reservation: Reservation
+  stay: Stay
+  amount: string
+  onApply: (amount: string) => void
+}) {
+  const { t, lang } = useApp()
+  const b = stayEstimateBreakdown(reservation, stay)
+  const check = checkAmount(reservation, stay, round2(Number(amount)))
+
+  return (
+    <div className="flex flex-col gap-1 rounded-md bg-background px-2.5 py-2 text-[11px]">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className="font-medium">{t.estimate}</span>
+        <AmountCheckBadge check={check} />
+      </div>
+      {b.total > 0 && (
+        <p className="font-mono tabular-nums text-muted-foreground">
+          (
+          {b.lines.map((l, i) => (
+            <span key={l.type}>
+              {i > 0 && ' + '}
+              <span className={l.rate == null ? 'text-warning-foreground' : undefined}>
+                {l.rate == null ? '?' : formatEUR(l.rate, lang)} × {l.rooms} {l.type}
+              </span>
+            </span>
+          ))}
+          ) × {b.nights}
+          {t.nightsUnit} = <span className="font-semibold text-foreground">{formatEUR(b.total, lang)}</span>
+        </p>
+      )}
+      {negotiatedHotelChanged(reservation, stay) && (
+        <p className="flex items-center gap-1 font-medium text-destructive">
+          <AlertTriangle className="size-3.5 shrink-0" aria-hidden="true" />
+          {t.hotelChangedWarn}
+        </p>
+      )}
+      {check.kind === 'mismatch' && (
+        <Button type="button" size="xs" variant="outline" className="self-start" onClick={() => onApply(b.total.toFixed(2))}>
+          <Wand2 aria-hidden="true" />
+          {t.applyEstimate}
+        </Button>
+      )}
     </div>
   )
 }

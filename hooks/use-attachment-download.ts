@@ -8,7 +8,8 @@ import type { AttachedFile } from '@/lib/types'
 export function useAttachmentDownload() {
   const { t } = useApp()
   return async (file: AttachedFile) => {
-    const ok = await downloadAttachment(file)
-    if (!ok) toast.error(t.fileUnavailable, { description: file.name })
+    const result = await downloadAttachment(file)
+    if (result === 'legacy') toast.error(t.fileUnavailable, { description: file.name })
+    else if (result === 'failed') toast.error(t.downloadFailed, { description: file.name })
   }
 }

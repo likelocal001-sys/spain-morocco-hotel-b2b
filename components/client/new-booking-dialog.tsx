@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { StayEditor, createStayDraft, type StayDraft } from '@/components/client/stay-editor'
+import { uploadAttachment } from '@/lib/attachments'
 import { addDays, formatFileSize, getStays, nightsBetween } from '@/lib/format'
 import { CITIES } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
@@ -122,6 +123,7 @@ export function NewBookingDialog({
   const isEdit = Boolean(reservation)
   const [form, setForm] = useState<FormState>(() => initialForm(reservation))
   const [error, setError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -130,7 +132,7 @@ export function NewBookingDialog({
   const nights = form.stays.reduce((sum, s) => sum + nightsBetween(s.checkIn, s.checkOut), 0)
   const total = form.rooms.single + form.rooms.twin + form.rooms.triple
 
-  function handleFile(file: File | undefined) {
+  async function handleFile(file: File | undefined) {
     if (!file) return
     const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
     if (!ALLOWED_EXT.includes(ext)) {
@@ -138,11 +140,19 @@ export function NewBookingDialog({
       return
     }
     setError(null)
-    update('roomingList', { name: file.name, size: file.size, url: URL.createObjectURL(file) })
+    setUploading(true)
+    try {
+      update('roomingList', await uploadAttachment(file, 'rooming'))
+    } catch {
+      setError(t.uploadFailed)
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (uploading) return
     if (!form.groupName.trim()) return setError(t.errGroup)
     if (form.stays.some((s) => !s.city.trim())) return setError(t.errCity)
     if (form.stays.some((s) => nightsBetween(s.checkIn, s.checkOut) <= 0)) return setError(t.errDates)

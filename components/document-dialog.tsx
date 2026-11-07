@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cityLabel, stayRequestLabels } from '@/lib/i18n'
 import { formatDate, formatEUR, getStays, nightsBetween, stayPayments, toISODate, totalRooms } from '@/lib/format'
 import { printElement } from '@/lib/print'
+import { useAttachmentDownload } from '@/hooks/use-attachment-download'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation } from '@/lib/types'
@@ -133,6 +134,7 @@ export function DocumentDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const { t, lang, hotelById, agencyName } = useApp()
+  const download = useAttachmentDownload()
   if (!reservation) return null
   const stays = getStays(reservation)
   const nights = stays.reduce((sum, s) => sum + nightsBetween(s.checkIn, s.checkOut), 0)
@@ -205,15 +207,7 @@ export function DocumentDialog({
           {kind === 'voucher' && reservation.voucherFile && (
             <Button
               variant="outline"
-              nativeButton={false}
-              render={
-                <a
-                  href={reservation.voucherFile.url ?? '#'}
-                  download={reservation.voucherFile.name}
-                  aria-disabled={!reservation.voucherFile.url}
-                  onClick={(e) => !reservation.voucherFile?.url && e.preventDefault()}
-                />
-              }
+              onClick={() => reservation.voucherFile && download(reservation.voucherFile)}
             >
               <Download aria-hidden="true" />
               {t.originalVoucher}

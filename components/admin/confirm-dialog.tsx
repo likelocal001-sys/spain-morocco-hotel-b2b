@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { uploadAttachment } from '@/lib/attachments'
 import { cityLabel } from '@/lib/i18n'
 import {
   defaultStayLimit,
@@ -47,6 +48,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
   const [voucher, setVoucher] = useState<AttachedFile | undefined>(reservation.voucherFile)
   const [error, setError] = useState<string | null>(null)
   const [reviewing, setReviewing] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const total = drafts.reduce((sum, d) => sum + (Number(d.amount) || 0), 0)
 
@@ -150,17 +152,28 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
             ) : (
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input px-4 py-4 text-sm font-medium text-primary transition-colors hover:border-primary hover:bg-secondary/40">
                 <Upload className="size-4" aria-hidden="true" />
-                {t.chooseFile} (.pdf)
+                {uploading ? t.uploading : `${t.chooseFile} (.pdf)`}
                 <input
                   type="file"
                   accept=".pdf,image/*"
                   className="sr-only"
-                  onChange={(e) => {
+                  disabled={uploading}
+                  onChange={async (e) => {
                     const file = e.target.files?.[0]
-                    if (file) setVoucher({ name: file.name, size: file.size, url: URL.createObjectURL(file) })
+                    e.target.value = ''
+                    if (!file) return
+                    setUploading(true)
+                    setError(null)
+                    try {
+                      setVoucher(await uploadAttachment(file, 'voucher'))
+                    } catch {
+                      setError(t.uploadFailed)
+                    } finally {
+                      setUploading(false)
+                    }
                   }}
                 />
-              </label>
+                </label>
             )}
           </div>
           {error && (
@@ -172,7 +185,7 @@ export function ConfirmDialog({ reservation, onClose }: { reservation: Reservati
             <Button type="button" variant="outline" onClick={onClose}>
               {t.cancel}
             </Button>
-            <Button type="submit">{t.save}</Button>
+            <Button type="submit" disabled={uploading}>{t.save}</Button>
           </div>
         </form>
         )}

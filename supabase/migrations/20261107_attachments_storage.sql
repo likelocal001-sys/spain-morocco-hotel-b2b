@@ -60,6 +60,11 @@ revoke all on function public.attachments_agency_can_read(text) from public;
 grant execute on function public.attachments_is_operator() to authenticated;
 grant execute on function public.attachments_agency_can_read(text) to authenticated;
 
+-- Earlier catch-all policies let any signed-in user read or upload any attachment.
+-- Policies are OR'ed, so they must be removed for the rules below to take effect.
+drop policy if exists "attachments_read_authenticated" on storage.objects;
+drop policy if exists "attachments_insert_authenticated" on storage.objects;
+
 drop policy if exists "attachments_select" on storage.objects;
 drop policy if exists "attachments_insert" on storage.objects;
 drop policy if exists "attachments_delete" on storage.objects;

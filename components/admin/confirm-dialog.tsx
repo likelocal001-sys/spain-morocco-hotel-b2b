@@ -187,7 +187,7 @@ export function ConfirmDialog({ reservation: initial, onClose }: { reservation: 
             ) : (
               <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-input px-4 py-4 text-sm font-medium text-primary transition-colors hover:border-primary hover:bg-secondary/40">
                 <Upload className="size-4" aria-hidden="true" />
-                {uploading ? t.uploading : `${t.chooseFile} (.pdf)`}
+                {uploading ? t.uploading : `${t.chooseFile} (${t.voucherHint})`}
                 <input
                   type="file"
                   accept=".pdf,.png,.jpg,.jpeg,.webp"

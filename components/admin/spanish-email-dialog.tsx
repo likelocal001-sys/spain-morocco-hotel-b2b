@@ -148,7 +148,22 @@ export function SpanishEmailDialog({ reservation: initial, onClose }: { reservat
   }
 
   async function copy() {
-    await navigator.clipboard.writeText(`${email.subject}\n\n${email.body}`)
+    const text = `${email.subject}\n\n${email.body}`
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      // Clipboard API is unavailable outside secure contexts (plain http) or when permission is denied.
+      const area = document.createElement('textarea')
+      area.value = text
+      area.setAttribute('readonly', '')
+      area.style.position = 'fixed'
+      area.style.opacity = '0'
+      document.body.appendChild(area)
+      area.select()
+      const ok = document.execCommand('copy')
+      area.remove()
+      if (!ok) return toast.error(t.copyFailed)
+    }
     toast.success(t.copied)
   }
 

@@ -1,4 +1,4 @@
-import type { BookingSnapshot, Lang, Reservation, RoomCounts, Stay, StayNegotiation } from './types'
+import type { BookingSnapshot, Lang, Reservation, RoomCounts, RoomType, Stay, StayNegotiation } from './types'
 
 export function toISODate(date: Date) {
   const y = date.getFullYear()
@@ -117,11 +117,42 @@ export function blockProgress(r: Reservation) {
 
 const RATE_TYPES = ['single', 'twin', 'triple'] as const
 
-export function stayEstimate(r: Reservation, stay: Stay) {
+export interface EstimateLine {
+  type: RoomType
+  rooms: number
+  rate?: number
+}
+
+export interface EstimateBreakdown {
+  lines: EstimateLine[]
+  /** Room types that have rooms booked but no negotiated rate yet. */
+  missing: RoomType[]
+  perNight: number
+  nights: number
+  total: number
+}
+
+/** Negotiated rate × rooms per type × nights — the same formula the negotiation workspace shows. */
+export function stayEstimateBreakdown(r: Reservation, stay: Stay): EstimateBreakdown {
   const n = r.negotiation?.[stay.id]
-  if (!n) return 0
-  const perNight = RATE_TYPES.reduce((sum, k) => sum + (n.rates?.[k] ?? n.rate ?? 0) * r.rooms[k], 0)
-  return perNight * nightsBetween(stay.checkIn, stay.checkOut)
+  const nights = nightsBetween(stay.checkIn, stay.checkOut)
+  const lines = RATE_TYPES.filter((k) => r.rooms[k] > 0).map((k) => ({
+    type: k,
+    rooms: r.rooms[k],
+    rate: n?.rates?.[k] ?? n?.rate,
+  }))
+  const perNight = lines.reduce((sum, l) => sum + (l.rate ?? 0) * l.rooms, 0)
+  return {
+    lines,
+    missing: lines.filter((l) => l.rate == null).map((l) => l.type),
+    perNight,
+    nights,
+    total: Math.round(perNight * nights * 100) / 100,
+  }
+}
+
+export function stayEstimate(r: Reservation, stay: Stay) {
+  return stayEstimateBreakdown(r, stay).total
 }
 
 export function negotiatedTotal(r: Reservation) {

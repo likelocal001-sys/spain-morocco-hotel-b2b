@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { StayEditor, createStayDraft, type StayDraft } from '@/components/client/stay-editor'
-import { uploadAttachment } from '@/lib/attachments'
+import { uploadAttachment, validateAttachment } from '@/lib/attachments'
 import { addDays, formatFileSize, getStays, nightsBetween } from '@/lib/format'
 import { CITIES } from '@/lib/i18n'
 import { useApp } from '@/lib/store'
@@ -22,7 +22,6 @@ const ROOM_TYPES: { key: keyof RoomCounts; label: string; pax: string }[] = [
   { key: 'triple', label: 'Triple', pax: '3 pax' },
 ]
 
-const ALLOWED_EXT = ['xlsx', 'xls', 'pdf']
 
 function RoomStepper({
   label,
@@ -134,9 +133,9 @@ export function NewBookingDialog({
 
   async function handleFile(file: File | undefined) {
     if (!file) return
-    const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
-    if (!ALLOWED_EXT.includes(ext)) {
-      setError(t.errFile)
+    const problem = validateAttachment(file, 'rooming')
+    if (problem) {
+      setError(problem === 'type' ? t.errFile : t.errFileSize)
       return
     }
     setError(null)
@@ -267,6 +266,7 @@ export function NewBookingDialog({
               accept=".xlsx,.xls,.pdf"
               className="sr-only"
               id="rooming-file"
+              disabled={uploading}
               onChange={(e) => {
                 handleFile(e.target.files?.[0])
                 e.target.value = ''
@@ -295,12 +295,12 @@ export function NewBookingDialog({
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault()
-                  handleFile(e.dataTransfer.files?.[0])
+                  if (!uploading) handleFile(e.dataTransfer.files?.[0])
                 }}
                 className="flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed border-input px-4 py-5 text-center transition-colors hover:border-primary hover:bg-secondary/40"
               >
                 <Upload className="size-5 text-primary" aria-hidden="true" />
-                <span className="text-sm font-medium text-primary">{t.chooseFile}</span>
+                <span className="text-sm font-medium text-primary">{uploading ? t.uploading : t.chooseFile}</span>
                 <span className="text-xs text-muted-foreground">{t.roomingHint}</span>
               </label>
             )}
@@ -327,7 +327,7 @@ export function NewBookingDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t.cancel}
             </Button>
-            <Button type="submit">{isEdit ? t.saveChanges : t.submit}</Button>
+            <Button type="submit" disabled={uploading}>{isEdit ? t.saveChanges : t.submit}</Button>
           </div>
         </form>
       </DialogContent>

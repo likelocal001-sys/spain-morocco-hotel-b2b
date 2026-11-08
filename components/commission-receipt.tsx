@@ -8,6 +8,7 @@ import { dictionaries } from '@/lib/i18n'
 import { settlementKey, useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { CommissionSettlement } from '@/lib/types'
+import { BrandLogo } from '@/components/brand-logo'
 
 export type CommissionState = 'unpaid' | 'reported' | 'received' | 'changed'
 
@@ -93,8 +94,9 @@ export function ReceiptDialog({
         <div className="print-area rounded-lg border bg-card p-5">
           <div className="flex items-start justify-between gap-4 border-b-2 border-primary pb-4">
             <div>
-              <p className="font-mono text-xs font-bold tracking-widest text-primary">SP-MOROCCO HOTEL DESK</p>
-              <h2 className="mt-1 text-xl font-bold">{ko.receiptTitle}</h2>
+              <BrandLogo />
+              <p className="mt-1 font-mono text-[10px] font-bold tracking-widest text-primary">SP-MOROCCO HOTEL DESK</p>
+              <h2 className="mt-2 text-xl font-bold">{ko.receiptTitle}</h2>
               <p className="text-sm font-medium text-muted-foreground">{es.receiptTitle}</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">

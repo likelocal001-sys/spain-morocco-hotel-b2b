@@ -4,6 +4,7 @@ import { Building2, LogOut, ShieldCheck } from 'lucide-react'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Lang } from '@/lib/types'
+import { BrandLogo } from '@/components/brand-logo'
 
 function Segmented<T extends string>({
   label,
@@ -44,13 +45,8 @@ export function AppHeader() {
     <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-sm">
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-2.5 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <div
-            aria-hidden="true"
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white font-mono text-sm font-bold text-primary"
-          >
-            SM
-          </div>
-          <div className="min-w-0 leading-tight">
+          <BrandLogo variant="white" className="h-8" />
+          <div className="hidden min-w-0 border-l border-white/25 pl-3 leading-tight sm:block">
             <p className="truncate text-sm font-semibold tracking-tight md:text-base">SP-Morocco Hotel Desk</p>
             <p className="truncate text-xs text-white/70">{t.appTagline}</p>
           </div>

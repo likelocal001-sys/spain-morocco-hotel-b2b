@@ -48,7 +48,10 @@ export function printElement(element: HTMLElement, title = document.title) {
     ),
   ).then(() => {
     const fonts = (doc as Document & { fonts?: FontFaceSet }).fonts
-    return fonts ? fonts.ready.then(() => undefined) : undefined
+    const images = Array.from(doc.images).map((img) =>
+      img.complete ? Promise.resolve() : img.decode().catch(() => undefined),
+    )
+    return Promise.all([fonts ? fonts.ready : undefined, ...images])
   }).then(() => setTimeout(run, 150))
   setTimeout(run, 2500)
 }

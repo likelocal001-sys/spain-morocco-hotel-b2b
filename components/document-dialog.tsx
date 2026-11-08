@@ -10,6 +10,7 @@ import { useAttachmentDownload } from '@/hooks/use-attachment-download'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Reservation } from '@/lib/types'
+import { BrandLogo } from '@/components/brand-logo'
 
 export type DocumentKind = 'voucher' | 'payment'
 
@@ -27,8 +28,9 @@ export function DocHeader({ title, subtitle }: { title: string; subtitle: string
   return (
     <div className="flex items-start justify-between gap-4 border-b-2 border-primary pb-4">
       <div>
-        <p className="font-mono text-xs font-bold tracking-widest text-primary">SP-MOROCCO HOTEL DESK</p>
-        <h2 className="mt-1 text-xl font-bold">{title}</h2>
+        <BrandLogo />
+        <p className="mt-1 font-mono text-[10px] font-bold tracking-widest text-primary">SP-MOROCCO HOTEL DESK</p>
+        <h2 className="mt-2 text-xl font-bold">{title}</h2>
         <p className="text-xs text-muted-foreground">{subtitle}</p>
       </div>
       <div className="text-right text-xs text-muted-foreground">

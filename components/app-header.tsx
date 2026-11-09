@@ -51,11 +51,19 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-foreground/15 bg-background/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 md:px-6">
-        <div className="flex min-w-0 items-baseline gap-3">
-          <p className="truncate font-serif text-lg font-bold tracking-tight">
-            SP-Morocco <span className="text-brand">Hotel Desk</span>
-          </p>
-          <p className="hidden truncate text-xs text-muted-foreground lg:block">{t.appTagline}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <div
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground"
+          >
+            SM
+          </div>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate font-serif text-lg font-bold tracking-tight">
+              SP-Morocco <span className="text-brand">Hotel Desk</span>
+            </p>
+            <p className="hidden truncate text-xs text-muted-foreground sm:block">{t.appTagline}</p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">

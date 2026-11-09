@@ -35,7 +35,7 @@ export function RevisionPanel({ reservation }: { reservation: Reservation }) {
   return (
     <section
       className={cn(
-        'flex flex-col gap-3 rounded-xl border p-4',
+        'flex flex-col gap-3 rounded-md border p-4',
         unseen.length ? 'border-warning/50 bg-warning/[0.06]' : 'bg-muted/30',
       )}
       aria-labelledby="revision-title"
@@ -45,7 +45,7 @@ export function RevisionPanel({ reservation }: { reservation: Reservation }) {
           <BellRing className={cn('size-4', unseen.length ? 'text-warning' : 'text-muted-foreground')} aria-hidden="true" />
           {t.changesTitle}
           {unseen.length > 0 && (
-            <span className="rounded-full bg-warning px-2 py-0.5 font-mono text-[11px] text-warning-foreground">
+            <span className="rounded-sm bg-warning px-2 py-0.5 font-mono text-[11px] text-warning-foreground">
               {unseen.length}
             </span>
           )}

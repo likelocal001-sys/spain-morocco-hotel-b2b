@@ -145,7 +145,7 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
             </span>
           </div>
           <div
-            className="h-2 overflow-hidden rounded-full bg-muted"
+            className="h-2 overflow-hidden bg-muted"
             role="progressbar"
             aria-label={t.progress}
             aria-valuenow={progress.percent}
@@ -153,7 +153,7 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
             aria-valuemax={100}
           >
             <div
-              className={cn('h-full rounded-full transition-all', progress.percent === 100 ? 'bg-success' : 'bg-primary')}
+              className={cn('h-full transition-all', progress.percent === 100 ? 'bg-success' : 'bg-primary')}
               style={{ width: `${progress.percent}%` }}
             />
           </div>
@@ -193,7 +193,7 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
               {t.stayNegotiation}
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 font-mono text-[11px] font-normal tabular-nums',
+                  'rounded-sm px-2 py-0.5 font-mono text-[11px] font-normal tabular-nums',
                   blocks.all ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground',
                 )}
               >
@@ -305,7 +305,7 @@ function StayCard({
   return (
     <li
       className={cn(
-        'flex flex-col rounded-xl border',
+        'flex flex-col rounded-md border',
         secured ? 'border-success/40 bg-success/5' : 'bg-card',
       )}
     >
@@ -314,7 +314,7 @@ function StayCard({
         onClick={onToggle}
         aria-expanded={open}
         aria-controls={`${fieldId}-body`}
-        className="flex flex-wrap items-center justify-between gap-2 rounded-xl p-4 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="flex flex-wrap items-center justify-between gap-2 rounded-md p-4 text-left transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span
@@ -335,7 +335,7 @@ function StayCard({
         <span className="flex items-center gap-2">
           <span
             className={cn(
-              'rounded-full px-2 py-0.5 text-[11px] font-medium',
+              'rounded-sm px-2 py-0.5 text-[11px] font-medium',
               secured ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning-foreground',
             )}
           >

@@ -59,7 +59,7 @@ export function ClientReservationsTable({
               <TableCell className="max-w-[240px] text-sm font-medium whitespace-normal">
                 {r.groupName}
                 {unseenRevisions(r).length > 0 && (
-                  <span className="mt-1 flex w-fit items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
+                  <span className="mt-1 flex w-fit items-center gap-1 rounded-sm bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-foreground">
                     <PencilLine className="size-3" aria-hidden="true" />
                     {t.revisionPending}
                   </span>

@@ -1,6 +1,5 @@
 'use client'
 
-import { Building, Calculator, Clock, Users, Workflow } from 'lucide-react'
 import { AttendanceTab } from './attendance-tab'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useApp } from '@/lib/store'
@@ -16,39 +15,34 @@ export function AdminBackoffice() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-xs font-medium text-primary">Morocco–Spain DMC Operations</p>
-        <h1 className="text-2xl font-bold tracking-tight text-balance">{t.adminTitle}</h1>
-        <p className="text-sm text-muted-foreground text-pretty">{t.adminSubtitle}</p>
+        <p className="text-xs tracking-wide text-muted-foreground uppercase">Morocco–Spain DMC Operations</p>
+        <h1 className="mt-1 font-serif text-3xl font-bold text-balance">{t.adminTitle}</h1>
+        <p className="mt-1 text-sm text-muted-foreground text-pretty">{t.adminSubtitle}</p>
       </div>
-      <Tabs defaultValue="pipeline" className="gap-4">
-        <TabsList className="h-10! w-full justify-start overflow-x-auto sm:w-fit">
-          <TabsTrigger value="pipeline" className="px-3">
-            <Workflow aria-hidden="true" />
+      <Tabs defaultValue="pipeline" className="gap-6">
+        <TabsList variant="line" className="h-10! w-full justify-start gap-4 overflow-x-auto border-b">
+          <TabsTrigger value="pipeline" className="flex-none px-0.5">
             {t.tabPipeline}
           </TabsTrigger>
-          <TabsTrigger value="hotels" className="px-3">
-            <Building aria-hidden="true" />
+          <TabsTrigger value="hotels" className="flex-none px-0.5">
             {t.tabHotels}
           </TabsTrigger>
           {isManager && (
-            <TabsTrigger value="billing" className="px-3">
-              <Calculator aria-hidden="true" />
+            <TabsTrigger value="billing" className="flex-none px-0.5">
               {t.tabBilling}
             </TabsTrigger>
           )}
           {isManager && (
-            <TabsTrigger value="members" className="px-3">
-              <Users aria-hidden="true" />
+            <TabsTrigger value="members" className="flex-none px-0.5">
               {t.tabMembers}
               {pendingCount > 0 && (
-                <span className="rounded-full bg-warning px-1.5 text-[10px] font-bold text-warning-foreground">
+                <span className="rounded-sm bg-warning px-1 font-mono text-[10px] font-semibold text-warning-foreground">
                   {pendingCount}
                 </span>
               )}
             </TabsTrigger>
           )}
-          <TabsTrigger value="attendance" className="px-3">
-            <Clock aria-hidden="true" />
+          <TabsTrigger value="attendance" className="flex-none px-0.5">
             {t.tabAttendance}
           </TabsTrigger>
         </TabsList>

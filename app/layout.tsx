@@ -1,6 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Noto_Sans_KR, Geist_Mono } from 'next/font/google'
+import { Noto_Sans_KR, Noto_Serif_KR, Geist_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -9,13 +9,17 @@ const notoKr = Noto_Sans_KR({
   weight: ['400', '500', '600', '700'],
   variable: '--font-noto-kr',
 })
+const notoSerifKr = Noto_Serif_KR({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  variable: '--font-serif-kr',
+})
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
   title: 'SP-Morocco Hotel Desk | 스페인 호텔 예약 대행 B2B 포털',
   description:
     '스페인 현지 호텔 그룹 예약 대행, 결제 기한(Payment Limit) 관리, 루밍리스트와 확정서 관리를 위한 B2B 포털.',
-  generator: 'v0.app',
   icons: {
     icon: [
       { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
@@ -28,7 +32,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#1E3A8A',
+  themeColor: '#F7F4EE',
 }
 
 export default function RootLayout({
@@ -37,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ko" className={`${notoKr.variable} ${geistMono.variable}`}>
+    <html lang="ko" className={`${notoKr.variable} ${notoSerifKr.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         {children}
         <Toaster position="top-center" richColors />

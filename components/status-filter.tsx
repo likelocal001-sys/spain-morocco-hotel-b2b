@@ -26,7 +26,7 @@ export function StatusFilter({
           aria-checked={value === status}
           onClick={() => onChange(status)}
           className={cn(
-            'flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+            'flex h-8 items-center gap-1.5 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
             value === status ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >

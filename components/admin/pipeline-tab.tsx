@@ -76,7 +76,7 @@ export function PipelineTab() {
   ]
 
   return (
-    <section className="rounded-xl border bg-card shadow-xs">
+    <section className="rounded-md border bg-card">
       <div className="flex flex-col gap-2 border-b p-3 lg:flex-row lg:items-center">
         <label htmlFor="admin-search" className="sr-only">
           {t.searchPlaceholder}
@@ -148,7 +148,7 @@ export function PipelineTab() {
                     <button
                       type="button"
                       onClick={() => setWorkspaceId(r.id)}
-                      className="mt-1 flex w-fit items-center gap-1 rounded-full bg-warning px-2 py-0.5 text-[11px] font-semibold text-warning-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      className="mt-1 flex w-fit items-center gap-1 rounded-sm bg-warning px-2 py-0.5 text-[11px] font-semibold text-warning-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     >
                       <PencilLine className="size-3" aria-hidden="true" />
                       {t.revisionBadge} {unseenRevisions(r).length}
@@ -156,10 +156,10 @@ export function PipelineTab() {
                   )}
                     {r.status !== 'cancelled' && (
                       <div className="mt-1 flex items-center gap-1.5" aria-label={t.progress}>
-                        <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                        <div className="h-1 w-16 overflow-hidden bg-muted">
                           <div
                             className={cn(
-                              'h-full rounded-full',
+                              'h-full',
                               negotiationProgress(r).percent === 100 ? 'bg-success' : 'bg-primary',
                             )}
                             style={{ width: `${negotiationProgress(r).percent}%` }}
@@ -174,7 +174,7 @@ export function PipelineTab() {
                       <button
                         type="button"
                         onClick={() => r.roomingList && download(r.roomingList)}
-                        className="mt-0.5 inline-flex items-center gap-1 text-left text-[11px] text-primary hover:underline"
+                        className="mt-0.5 inline-flex items-center gap-1 text-left text-[11px] text-brand hover:underline"
                       >
                         <FileSpreadsheet className="size-3 shrink-0" aria-hidden="true" />
                         {r.roomingList.name}

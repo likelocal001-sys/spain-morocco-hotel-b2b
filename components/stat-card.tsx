@@ -1,11 +1,14 @@
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+/**
+ * A figure with a rule above it — reads like a line in a ledger rather than a tile.
+ * `icon` is accepted for API compatibility but intentionally not rendered.
+ */
 export function StatCard({
   label,
   value,
   hint,
-  icon: Icon,
   tone = 'default',
 }: {
   label: string
@@ -17,36 +20,24 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'flex flex-col gap-1 rounded-xl border bg-card p-4 shadow-xs',
-        tone === 'danger' && 'border-destructive/40 bg-destructive/5',
-        tone === 'primary' && 'border-primary bg-primary text-primary-foreground',
+        'flex flex-col gap-1 border-t-2 border-foreground/80 pt-2.5',
+        tone === 'danger' && 'border-destructive',
+        tone === 'primary' && 'border-brand',
+        tone === 'success' && 'border-success',
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className={cn('text-xs font-medium text-muted-foreground', tone === 'primary' && 'text-white/75')}>
-          {label}
-        </span>
-        {Icon && (
-          <Icon
-            aria-hidden="true"
-            className={cn(
-              'size-4 text-muted-foreground',
-              tone === 'danger' && 'text-destructive',
-              tone === 'primary' && 'text-white/75',
-            )}
-          />
-        )}
-      </div>
+      <span className="text-xs text-muted-foreground">{label}</span>
       <span
         className={cn(
-          'font-mono text-2xl font-bold tabular-nums',
+          'font-mono text-[1.75rem] leading-none font-semibold tracking-tight tabular-nums',
           tone === 'success' && 'text-success',
           tone === 'danger' && 'text-destructive',
+          tone === 'primary' && 'text-brand',
         )}
       >
         {value}
       </span>
-      {hint && <span className={cn('text-xs text-muted-foreground', tone === 'primary' && 'text-white/70')}>{hint}</span>}
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
   )
 }

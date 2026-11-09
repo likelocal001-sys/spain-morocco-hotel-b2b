@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { Bus, Mail, Pencil, Phone, Plus } from 'lucide-react'
+import { HotelMapButton } from '@/components/hotel-map'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatEUR } from '@/lib/format'
 import { CITIES, cityLabel } from '@/lib/i18n'
+import { hasLocation } from '@/lib/maps'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Hotel } from '@/lib/types'
@@ -91,6 +93,11 @@ export function HotelsTab() {
             <TableRow key={h.id}>
               <TableCell className="pl-4">
                 <p className="text-sm font-medium">{h.nameEs}</p>
+                {hasLocation(h) ? (
+                  <HotelMapButton hotel={h} />
+                ) : (
+                  <span className="text-[11px] text-muted-foreground">{t.noLocation}</span>
+                )}
               </TableCell>
               <TableCell className="text-xs">{cityLabel(h.city, lang)}</TableCell>
               <TableCell>

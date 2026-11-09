@@ -1,5 +1,6 @@
 'use client'
 
+import { HotelMapButton, RouteLink } from '@/components/hotel-map'
 import { RequestTagChips } from '@/components/stay-request-tags'
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { cityLabel } from '@/lib/i18n'
@@ -127,8 +128,9 @@ export function HotelCell({
   const stays = getStays(reservation)
   return (
     <ul className="flex min-w-0 flex-col gap-0.5">
-      {stays.map((stay) => {
+      {stays.map((stay, index) => {
         const hotel = hotelById(stay.hotelId)
+        const nextHotel = hotelById(stays[index + 1]?.hotelId)
         return (
           <li key={stay.id} className="flex min-w-0 flex-col gap-0.5 py-0.5">
             <div className="flex min-w-0 items-baseline gap-1.5">
@@ -140,8 +142,10 @@ export function HotelCell({
               <span className="max-w-[160px] truncate text-[11px] text-muted-foreground">
                 {hotel ? hotel.nameEs : `${t.unassigned} · ${stay.stars}★`}
               </span>
+              <HotelMapButton hotel={hotel} compact className="self-center" />
             </div>
             {showRequests && <RequestTagChips tags={stay.requestTags ?? []} note={stay.requestNote} compact />}
+            <RouteLink from={hotel} to={nextHotel} label={`${t.routeShort} → ${cityLabel(stays[index + 1]?.city ?? '', lang)}`} />
           </li>
         )
       })}

@@ -55,8 +55,9 @@ as $$
   );
 $$;
 
-revoke all on function public.attachments_is_operator() from public;
-revoke all on function public.attachments_agency_can_read(text) from public;
+-- Supabase grants execute to anon directly (not via public), so revoke it explicitly too.
+revoke all on function public.attachments_is_operator() from public, anon;
+revoke all on function public.attachments_agency_can_read(text) from public, anon;
 grant execute on function public.attachments_is_operator() to authenticated;
 grant execute on function public.attachments_agency_can_read(text) to authenticated;
 

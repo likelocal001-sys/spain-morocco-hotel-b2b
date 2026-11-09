@@ -54,7 +54,7 @@ function MemberChangeLog() {
       <h3 id="member-log-title" className="text-sm font-semibold">
         {t.memberLogTitle}
       </h3>
-      <div className="rounded-xl border bg-card">
+      <div className="rounded-md border bg-card">
         {!data || data.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">{t.memberLogEmpty}</p>
         ) : (
@@ -114,7 +114,7 @@ function NewAgencyForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row sm:items-end">
+    <form onSubmit={onSubmit} className="flex flex-col gap-3 rounded-md border bg-card p-4 sm:flex-row sm:items-end">
       <div className="flex flex-1 flex-col gap-1.5">
         <Label htmlFor="agency-ko">{t.agencyNameKo}</Label>
         <Input id="agency-ko" required value={nameKo} onChange={(e) => setNameKo(e.target.value)} />
@@ -176,7 +176,7 @@ export function MembersTab() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border bg-card">
+      <div className="overflow-hidden rounded-md border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

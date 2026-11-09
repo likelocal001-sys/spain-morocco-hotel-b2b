@@ -91,7 +91,7 @@ export function PaymentStatusDialog({
                 <div className="flex shrink-0 items-center gap-1 self-end sm:self-center">
                   {p.paid ? (
                     <>
-                      <span className="flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
+                      <span className="flex items-center gap-1 rounded-sm bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
                         <CircleCheck className="size-3.5" aria-hidden="true" />
                         {t.deposited}
                         {p.paidAt && <span className="font-mono font-normal">{formatDate(p.paidAt, lang)}</span>}
@@ -112,7 +112,7 @@ export function PaymentStatusDialog({
                       {t.markDeposited}
                     </Button>
                   ) : (
-                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                    <span className="rounded-sm bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                       {t.notDeposited}
                     </span>
                   )}

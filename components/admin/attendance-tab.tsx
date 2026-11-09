@@ -155,7 +155,7 @@ function TodayCard({ settings }: { settings: AttendanceSettings }) {
   return (
     <section
       aria-labelledby="att-today-title"
-      className="flex flex-col gap-4 rounded-xl border bg-card p-4 md:flex-row md:items-center md:justify-between"
+      className="flex flex-col gap-4 rounded-md border bg-card p-4 md:flex-row md:items-center md:justify-between"
     >
       <div className="flex items-center gap-3">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -646,7 +646,7 @@ export function AttendanceTab() {
           </h3>
           {isManager && rows.length > 1 && <p className="text-xs text-muted-foreground">{t.attSummaryHint}</p>}
         </div>
-        <div className="rounded-xl border bg-card">
+        <div className="rounded-md border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -697,7 +697,7 @@ export function AttendanceTab() {
           <h3 id="att-detail-title" className="text-sm font-semibold">
             {t.attDetailTitle} · {memberName(selected.member)}
           </h3>
-          <div className="rounded-xl border bg-card">
+          <div className="rounded-md border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

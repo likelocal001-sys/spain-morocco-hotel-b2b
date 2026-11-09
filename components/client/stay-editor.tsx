@@ -254,7 +254,7 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                           })
                         }
                         className={cn(
-                          'rounded-full border px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                          'rounded-sm border px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                           active
                             ? 'border-primary bg-primary text-primary-foreground'
                             : 'border-input bg-background hover:border-primary hover:text-primary',
@@ -272,7 +272,7 @@ export function StayEditor({ stays, onChange }: { stays: StayDraft[]; onChange: 
                       patch(index, stay.noteOpen ? { noteOpen: false, requestNote: '' } : { noteOpen: true })
                     }
                     className={cn(
-                      'flex items-center gap-1 rounded-full border border-dashed px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                      'flex items-center gap-1 rounded-sm border border-dashed px-2.5 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                       stay.noteOpen
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-input bg-background hover:border-primary hover:text-primary',

@@ -36,7 +36,7 @@ export function HotelsTab() {
   })
 
   return (
-    <section className="rounded-xl border bg-card shadow-xs">
+    <section className="rounded-md border bg-card">
       <div className="flex flex-col gap-2 border-b p-3 sm:flex-row sm:items-center">
         <label htmlFor="hotel-search" className="sr-only">
           {t.searchHotels}
@@ -107,7 +107,7 @@ export function HotelsTab() {
                       {c.email && (
                         <a
                           href={`mailto:${c.email}`}
-                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="flex items-center gap-1 text-xs text-brand hover:underline"
                         >
                           <Mail className="size-3" aria-hidden="true" />
                           {c.email}

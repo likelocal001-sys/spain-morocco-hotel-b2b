@@ -37,12 +37,12 @@ export function ClientPortal() {
     .sort((a, b) => a.checkIn.localeCompare(b.checkIn))
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-7">
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
         <div>
-          <p className="text-xs font-medium text-primary">{agencyName(currentAgencyId)}</p>
-          <h1 className="text-2xl font-bold tracking-tight text-balance">{t.clientTitle}</h1>
-          <p className="text-sm text-muted-foreground text-pretty">{t.clientSubtitle}</p>
+          <p className="text-xs tracking-wide text-muted-foreground uppercase">{agencyName(currentAgencyId)}</p>
+          <h1 className="mt-1 font-serif text-3xl font-bold text-balance">{t.clientTitle}</h1>
+          <p className="mt-1 text-sm text-muted-foreground text-pretty">{t.clientSubtitle}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setInvoiceOpen(true)}>
@@ -56,7 +56,7 @@ export function ClientPortal() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
         <StatCard label={t.statTotal} value={mine.length} icon={FileText} />
         <StatCard
           label={t.statActive}
@@ -69,7 +69,7 @@ export function ClientPortal() {
       {urgent.length > 0 && (
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm"
+          className="flex items-start gap-3 border-l-2 border-destructive bg-destructive/5 px-4 py-3 text-sm"
         >
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
           <div className="flex flex-col gap-1">
@@ -82,7 +82,7 @@ export function ClientPortal() {
         </div>
       )}
 
-      <section className="rounded-xl border bg-card shadow-xs">
+      <section className="rounded-md border bg-card">
         <div className="flex flex-col gap-2 border-b p-3 sm:flex-row sm:items-center">
           <label htmlFor="client-search" className="sr-only">
             {t.searchPlaceholder}

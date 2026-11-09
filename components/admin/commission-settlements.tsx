@@ -35,7 +35,7 @@ export function CommissionSettlements() {
   }, [reservations, settlements, commissionFor])
 
   return (
-    <section className="rounded-xl border bg-card shadow-xs" aria-labelledby="commission-settlements">
+    <section className="rounded-md border bg-card" aria-labelledby="commission-settlements">
       <div className="flex flex-col gap-1 border-b px-4 py-3">
         <h2 id="commission-settlements" className="text-sm font-semibold">
           {t.commissionSettlement}

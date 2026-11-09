@@ -20,8 +20,8 @@ const empty = (): Aggregate => ({ bookings: 0, rooms: 0, roomNights: 0, fee: 0 }
 
 function Bar({ value, max }: { value: number; max: number }) {
   return (
-    <div className="h-1.5 w-full min-w-16 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-      <div className="h-full rounded-full bg-primary" style={{ width: `${max ? (value / max) * 100 : 0}%` }} />
+    <div className="h-1.5 w-full min-w-16 overflow-hidden bg-muted" aria-hidden="true">
+      <div className="h-full bg-primary" style={{ width: `${max ? (value / max) * 100 : 0}%` }} />
     </div>
   )
 }
@@ -74,7 +74,7 @@ export function BillingTab() {
         {t.feeHint}
       </p>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
         <StatCard label={t.confirmedBookings} value={totals.bookings} icon={CalendarCheck} />
         <StatCard label={t.rooms} value={totals.rooms} icon={BedDouble} />
         <StatCard label={t.roomNights} value={totals.roomNights} />
@@ -90,7 +90,7 @@ export function BillingTab() {
       <CommissionSettlements />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section className="rounded-xl border bg-card shadow-xs" aria-labelledby="by-hotel">
+        <section className="rounded-md border bg-card" aria-labelledby="by-hotel">
           <h2 id="by-hotel" className="border-b px-4 py-3 text-sm font-semibold">
             {t.byHotel}
           </h2>
@@ -154,7 +154,7 @@ export function BillingTab() {
           </Table>
         </section>
 
-        <section className="rounded-xl border bg-card shadow-xs" aria-labelledby="by-month">
+        <section className="rounded-md border bg-card" aria-labelledby="by-month">
           <h2 id="by-month" className="border-b px-4 py-3 text-sm font-semibold">
             {t.byMonth}
           </h2>

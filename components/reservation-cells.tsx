@@ -17,10 +17,10 @@ import { cn } from '@/lib/utils'
 import type { Reservation, ReservationStatus } from '@/lib/types'
 
 const STATUS_STYLES: Record<ReservationStatus, string> = {
-  pending: 'bg-muted text-muted-foreground ring-border',
-  in_progress: 'bg-secondary text-primary ring-primary/20',
-  confirmed: 'bg-success/10 text-success ring-success/30',
-  cancelled: 'bg-destructive/5 text-destructive/80 ring-destructive/20 line-through decoration-destructive/40',
+  pending: 'border-border text-muted-foreground',
+  in_progress: 'border-brand/40 text-brand',
+  confirmed: 'border-success/40 text-success',
+  cancelled: 'border-transparent text-muted-foreground line-through decoration-destructive/50',
 }
 
 export function StatusBadge({ status }: { status: ReservationStatus }) {
@@ -28,13 +28,13 @@ export function StatusBadge({ status }: { status: ReservationStatus }) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium whitespace-nowrap ring-1 ring-inset',
+        'inline-flex h-6 items-center gap-1.5 rounded-sm border bg-card px-2 text-xs font-medium whitespace-nowrap',
         STATUS_STYLES[status],
       )}
     >
       <span
         aria-hidden="true"
-        className={cn('size-1.5 rounded-full bg-current', status === 'in_progress' && 'animate-pulse')}
+        className="size-1.5 bg-current"
       />
       {t[`status_${status}`]}
     </span>

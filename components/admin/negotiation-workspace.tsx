@@ -29,6 +29,8 @@ import {
   NEGOTIATION_STEPS,
   cityLabel,
 } from '@/lib/i18n'
+import { HotelMapButton, HotelMapEmbed, RouteLink } from '@/components/hotel-map'
+import { hasLocation } from '@/lib/maps'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { ConfirmAction } from './confirm-action'
@@ -223,6 +225,8 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
                 negotiation={r.negotiation?.[stay.id] ?? { steps: [] }}
                 onPatch={(changes, startsWork) => patchStay(stay.id, changes, startsWork)}
                 onAssignHotel={(hotelId) => assignHotel(stay.id, hotelId)}
+                prevHotelId={stays[index - 1]?.hotelId}
+                nextHotelId={stays[index + 1]?.hotelId}
               />
             ))}
           </ol>
@@ -264,6 +268,8 @@ function StayCard({
   negotiation,
   onPatch,
   onAssignHotel,
+  prevHotelId,
+  nextHotelId,
 }: {
   index: number
   stay: Stay
@@ -273,6 +279,8 @@ function StayCard({
   negotiation: StayNegotiation
   onPatch: (changes: Partial<StayNegotiation>, startsWork?: boolean) => void
   onAssignHotel: (hotelId: string | undefined) => void
+  prevHotelId?: string
+  nextHotelId?: string
 }) {
   const { t, lang, hotels, hotelById } = useApp()
   const nights = nightsBetween(stay.checkIn, stay.checkOut)
@@ -377,6 +385,18 @@ function StayCard({
                 ))}
               </SelectContent>
             </Select>
+            {hotel && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
+                {hasLocation(hotel) ? (
+                  <HotelMapButton hotel={hotel} />
+                ) : (
+                  <span className="text-[11px] text-muted-foreground">{t.noLocation}</span>
+                )}
+                <RouteLink from={hotelById(prevHotelId)} to={hotel} label={t.routeFromPrev} />
+                <RouteLink from={hotel} to={hotelById(nextHotelId)} label={t.routeToNext} />
+              </div>
+            )}
+            {hotel && hasLocation(hotel) && <HotelMapEmbed hotel={hotel} className="mt-1 h-40" />}
           </div>
 
           <div className="flex flex-col gap-1.5 rounded-lg bg-muted/50 p-2.5">

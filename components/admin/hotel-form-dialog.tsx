@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Loader2, MapPin, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { HotelMapEmbed } from '@/components/hotel-map'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -12,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { DEFAULT_PAYMENT_DAYS, formatEUR } from '@/lib/format'
 import { CITIES, CUSTOM_CITY, cityLabel, isKnownCity } from '@/lib/i18n'
+import { isShortMapsLink, parseMapsUrl } from '@/lib/maps'
 import { DEFAULT_FEE_RATE, FEE_RATES, useApp } from '@/lib/store'
-import type { City, Hotel, HotelBank, HotelContact, RoomType } from '@/lib/types'
+import type { City, Hotel, HotelBank, HotelContact, HotelLocation, RoomType } from '@/lib/types'
 
 const EMAIL_PATTERN = /^\S+@\S+\.\S+$/
 
@@ -74,6 +76,39 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
   const [customCity, setCustomCity] = useState(() => (hotel ? !isKnownCity(hotel.city) : false))
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((p) => ({ ...p, [key]: value }))
 
+  const [mapsInput, setMapsInput] = useState(hotel?.location?.mapsUrl ?? '')
+  const [mapsStatus, setMapsStatus] = useState<'idle' | 'resolving' | 'invalid' | 'unresolved'>('idle')
+
+  async function applyMapsLink(raw: string) {
+    const text = raw.trim()
+    if (mapsStatus === 'resolving' || text === (form.location?.mapsUrl ?? '')) return
+    if (!text) {
+      setMapsStatus('idle')
+      return set('location', undefined)
+    }
+    let location: HotelLocation | null
+    if (isShortMapsLink(text)) {
+      setMapsStatus('resolving')
+      try {
+        const res = await fetch(`/api/maps/resolve?url=${encodeURIComponent(text)}`)
+        const body = (await res.json()) as { url?: string }
+        location = body.url ? parseMapsUrl(body.url) : null
+        if (location) location.mapsUrl = text
+        if (!location) return setMapsStatus('unresolved')
+      } catch {
+        return setMapsStatus('unresolved')
+      }
+    } else {
+      location = parseMapsUrl(text)
+      if (!location) return setMapsStatus('invalid')
+    }
+    setMapsStatus('idle')
+    const placeName = location.placeName
+    setForm((p) => ({ ...p, location, nameEs: !p.nameEs.trim() && placeName ? placeName : p.nameEs }))
+  }
+
+  const googleName = form.location?.placeName
+
   const updateContact = (id: string, patch: Partial<HotelContact>) =>
     set(
       'contacts',
@@ -119,9 +154,84 @@ export function HotelFormDialog({ hotel, onClose }: { hotel: Hotel | null; onClo
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <Label htmlFor="h-maps">{t.mapsLink}</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin
+                    className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  <Input
+                    id="h-maps"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://maps.app.goo.gl/…"
+                    value={mapsInput}
+                    onChange={(e) => setMapsInput(e.target.value)}
+                    onPaste={(e) => {
+                      const pasted = e.clipboardData.getData('text')
+                      e.preventDefault()
+                      setMapsInput(pasted.trim())
+                      void applyMapsLink(pasted)
+                    }}
+                    onBlur={() => void applyMapsLink(mapsInput)}
+                    aria-invalid={mapsStatus === 'invalid' || mapsStatus === 'unresolved' || undefined}
+                    aria-describedby="h-maps-hint"
+                    className="pl-8"
+                  />
+                </div>
+                {form.location && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={t.removeLocation}
+                    onClick={() => {
+                      setMapsInput('')
+                      setMapsStatus('idle')
+                      set('location', undefined)
+                    }}
+                  >
+                    <X />
+                  </Button>
+                )}
+              </div>
+              <p id="h-maps-hint" className="text-xs text-muted-foreground" aria-live="polite">
+                {mapsStatus === 'resolving' ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 className="size-3 animate-spin" aria-hidden="true" />
+                    {t.mapsResolving}
+                  </span>
+                ) : mapsStatus === 'invalid' ? (
+                  <span className="text-destructive">{t.mapsInvalid}</span>
+                ) : mapsStatus === 'unresolved' ? (
+                  <span className="text-destructive">{t.mapsUnresolved}</span>
+                ) : form.location && form.location.lat == null ? (
+                  t.mapsNoPin
+                ) : (
+                  t.mapsLinkHint
+                )}
+              </p>
+            </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
               <Label htmlFor="h-name-es">{t.hotelNameEs} *</Label>
               <Input id="h-name-es" value={form.nameEs} onChange={(e) => set('nameEs', e.target.value)} />
+              {googleName && googleName !== form.nameEs.trim() && (
+                <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                  <span>
+                    {t.googleName}: <span className="font-medium text-foreground">{googleName}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => set('nameEs', googleName)}
+                    className="text-brand hover:underline focus-visible:underline focus-visible:outline-none"
+                  >
+                    {t.useGoogleName}
+                  </button>
+                </p>
+              )}
             </div>
+            {form.location && <HotelMapEmbed hotel={form} className="sm:col-span-2" />}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="h-city">{t.city}</Label>
               <Select

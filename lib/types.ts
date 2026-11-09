@@ -117,9 +117,19 @@ export interface HotelBank {
   bic: string
 }
 
+/** Where the hotel is, taken from a Google Maps link pasted by the operations team. */
+export interface HotelLocation {
+  mapsUrl: string
+  /** The place name as Google Maps shows it. */
+  placeName?: string
+  lat?: number
+  lng?: number
+}
+
 export interface Hotel {
   id: string
   nameEs: string
+  location?: HotelLocation
   city: City
   stars: number
   contacts: HotelContact[]

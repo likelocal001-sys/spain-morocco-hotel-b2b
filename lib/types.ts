@@ -17,8 +17,17 @@ export type City = KnownCity | (string & {})
 export type NegotiationStep = 'quoteRequested' | 'quoteReceived' | 'counterOffer' | 'termsAgreed' | 'optionHeld'
 export type GroupCheck = 'roomingChecked' | 'requestsShared' | 'paymentInformed' | 'voucherSent'
 
+/** Who ticked a checklist item and when, plus the proof file for items that require one. */
+export interface CheckRecord {
+  at: string
+  byId: string
+  byName: string
+  evidence?: AttachedFile
+}
+
 export interface StayNegotiation {
   steps: NegotiationStep[]
+  checks?: Partial<Record<NegotiationStep, CheckRecord>>
   rate?: number
   rates?: Partial<Record<RoomType, number>>
   note?: string
@@ -83,6 +92,7 @@ export interface Reservation {
   createdAt: string
   negotiation?: Record<string, StayNegotiation>
   groupChecks?: GroupCheck[]
+  groupCheckLog?: Partial<Record<GroupCheck, CheckRecord>>
   revisions?: Revision[]
 }
 

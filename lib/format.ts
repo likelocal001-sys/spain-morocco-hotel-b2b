@@ -109,10 +109,17 @@ export function isBlockSecured(r: Reservation, stayId: string) {
   return r.negotiation?.[stayId]?.steps.includes('optionHeld') ?? false
 }
 
+/** Block secured and backed by the hotel's confirmation email screenshot. */
+export function isBlockProven(r: Reservation, stayId: string) {
+  return isBlockSecured(r, stayId) && Boolean(r.negotiation?.[stayId]?.checks?.optionHeld?.evidence)
+}
+
 export function blockProgress(r: Reservation) {
   const stays = getStays(r)
   const secured = stays.filter((s) => isBlockSecured(r, s.id)).length
-  return { secured, total: stays.length, all: secured === stays.length }
+  const proven = stays.filter((s) => isBlockProven(r, s.id)).length
+  // `ready`: every block is secured with evidence, so the reservation may be finalised.
+  return { secured, proven, total: stays.length, all: secured === stays.length, ready: proven === stays.length }
 }
 
 const RATE_TYPES = ['single', 'twin', 'triple'] as const

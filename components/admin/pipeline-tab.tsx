@@ -214,7 +214,7 @@ export function PipelineTab() {
                         </Button>
                       )}
                       {r.status === 'in_progress' &&
-                        (blockProgress(r).all ? (
+                        (blockProgress(r).ready ? (
                           <Button size="xs" onClick={() => setConfirming(r)}>
                             <BadgeCheck aria-hidden="true" />
                             {t.finalComplete}
@@ -222,7 +222,7 @@ export function PipelineTab() {
                         ) : (
                           <span
                             className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground tabular-nums"
-                            title={t.allBlocksHint}
+                            title={blockProgress(r).all ? t.evidenceBlocksHint : t.allBlocksHint}
                           >
                             {t.blocksStatus} {blockProgress(r).secured}/{blockProgress(r).total}
                           </span>

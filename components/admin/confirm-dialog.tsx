@@ -103,6 +103,7 @@ export function ConfirmDialog({ reservation: initial, onClose }: { reservation: 
     if (drafts.some((d) => !d.stay.hotelId)) return setError(t.errHotel)
     if (drafts.some((d) => !(Number(d.amount) > 0))) return setError(t.errAmount)
     if (drafts.some((d) => !d.limit)) return setError(t.errLimit)
+    if (!voucher) return setError(t.errVoucherRequired)
     setError(null)
     setReviewing(true)
   }
@@ -172,7 +173,7 @@ export function ConfirmDialog({ reservation: initial, onClose }: { reservation: 
           </fieldset>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">{t.voucherUpload}</span>
+            <span className="text-sm font-medium">{t.voucherUpload} *</span>
             {voucher ? (
               <div className="flex items-center gap-3 rounded-lg border bg-secondary/60 px-3 py-2">
                 <FileCheck2 className="size-5 text-primary" aria-hidden="true" />

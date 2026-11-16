@@ -1,6 +1,17 @@
 import type { City, GroupCheck, KnownCity, Lang, NegotiationStep, RequestTag, Stay } from './types'
 
 const ko = {
+  evidenceRequired: '증빙 필수',
+  evidenceMissing: '증빙 없음 · 캡처를 올려주세요',
+  evidenceUpload: '캡처 올리기',
+  evidenceView: '증빙 보기',
+  evidenceFileError: '증빙은 PDF 또는 이미지(.png, .jpg, .webp) 파일만 올릴 수 있습니다',
+  evidenceAttachedToast: '증빙이 첨부되어 체크되었습니다',
+  uncheckEvidenceTitle: '체크를 해제할까요?',
+  uncheckEvidenceDesc: '첨부된 증빙 기록이 이 항목에서 지워집니다.',
+  uncheck: '해제',
+  evidenceBlocksHint: '블럭 확보 증빙(호텔 확정 메일 캡처)이 없는 구간이 있어 최종 완료할 수 없습니다',
+  errVoucherRequired: '호텔 확정서를 첨부해야 확정할 수 있습니다',
   appTagline: '스페인 호텔 예약 대행 B2B 포털',
   clientView: '여행사 뷰',
   adminView: '관리자 뷰',
@@ -448,6 +459,17 @@ const ko = {
 export type Dict = typeof ko
 
 const es: Dict = {
+  evidenceRequired: 'Prueba obligatoria',
+  evidenceMissing: 'Sin prueba · suba una captura',
+  evidenceUpload: 'Subir captura',
+  evidenceView: 'Ver prueba',
+  evidenceFileError: 'La prueba debe ser un PDF o una imagen (.png, .jpg, .webp)',
+  evidenceAttachedToast: 'Prueba adjuntada y paso marcado',
+  uncheckEvidenceTitle: '¿Desmarcar este paso?',
+  uncheckEvidenceDesc: 'Se quitará el registro de la prueba adjunta de este paso.',
+  uncheck: 'Desmarcar',
+  evidenceBlocksHint: 'Hay tramos sin prueba de bloqueo (captura del correo del hotel); no se puede finalizar',
+  errVoucherRequired: 'Adjunte el bono del hotel para confirmar',
   appTagline: 'Portal B2B de reservas hoteleras en España',
   clientView: 'Vista agencia',
   adminView: 'Vista admin',
@@ -934,6 +956,15 @@ export const NEGOTIATION_STEP_LABELS: Record<NegotiationStep, Record<Lang, strin
   counterOffer: { ko: '단가 재협상', es: 'Contraoferta enviada' },
   termsAgreed: { ko: '조건 합의', es: 'Condiciones acordadas' },
   optionHeld: { ko: '객실 블록 확보', es: 'Bloqueo de habitaciones' },
+}
+
+/** Steps that can only be ticked by attaching a screenshot of the email that proves them. */
+export const EVIDENCE_STEP_HINTS: Partial<Record<NegotiationStep, Record<Lang, string>>> = {
+  optionHeld: { ko: '호텔 블럭 확정 메일 캡처', es: 'Captura del correo de bloqueo del hotel' },
+}
+
+export const EVIDENCE_GROUP_HINTS: Partial<Record<GroupCheck, Record<Lang, string>>> = {
+  voucherSent: { ko: '여행사에 보낸 바우처 메일 캡처', es: 'Captura del correo del bono enviado a la agencia' },
 }
 
 export const GROUP_CHECKS: GroupCheck[] = ['roomingChecked', 'requestsShared', 'paymentInformed', 'voucherSent']

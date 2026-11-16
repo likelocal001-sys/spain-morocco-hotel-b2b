@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import { StatusBadge } from '@/components/reservation-cells'
 import { StayRequestsBox } from '@/components/stay-request-tags'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,6 +22,8 @@ import {
   totalRooms,
 } from '@/lib/format'
 import {
+  EVIDENCE_GROUP_HINTS,
+  EVIDENCE_STEP_HINTS,
   GROUP_CHECK_LABELS,
   GROUP_CHECKS,
   NEGOTIATION_STEP_LABELS,
@@ -33,8 +34,10 @@ import { HotelMapButton, HotelMapEmbed, RouteLink } from '@/components/hotel-map
 import { hasLocation } from '@/lib/maps'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { CheckItem } from './check-item'
 import { ConfirmAction } from './confirm-action'
 import type {
+  CheckRecord,
   GroupCheck,
   NegotiationStep,
   Reservation,
@@ -60,6 +63,18 @@ interface Props {
 
 function toggle<T>(list: T[], item: T, on: boolean) {
   return on ? (list.includes(item) ? list : [...list, item]) : list.filter((x) => x !== item)
+}
+
+/** Sets or clears one item's record in a check log. */
+function withRecord<K extends string>(
+  log: Partial<Record<K, CheckRecord>> | undefined,
+  key: K,
+  record: CheckRecord | undefined,
+) {
+  const next: Partial<Record<K, CheckRecord>> = { ...log }
+  if (record) next[key] = record
+  else delete next[key]
+  return next
 }
 
 export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmail }: Props) {
@@ -167,23 +182,22 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
             {GROUP_CHECKS.map((check) => {
               const checked = r.groupChecks?.includes(check) ?? false
               return (
-                <Label
+                <CheckItem
                   key={check}
-                  className={cn(
-                    'cursor-pointer rounded-lg border px-3 py-2.5 text-xs font-normal transition-colors',
-                    checked ? 'border-primary/30 bg-secondary' : 'hover:bg-muted/60',
-                  )}
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(on) =>
-                      save({ groupChecks: toggle<GroupCheck>(r.groupChecks ?? [], check, Boolean(on)) }, true)
-                    }
-                  />
-                  <span className={cn(checked && 'text-muted-foreground line-through')}>
-                    {GROUP_CHECK_LABELS[check][lang]}
-                  </span>
-                </Label>
+                  label={GROUP_CHECK_LABELS[check][lang]}
+                  checked={checked}
+                  record={r.groupCheckLog?.[check]}
+                  evidenceHint={EVIDENCE_GROUP_HINTS[check]?.[lang]}
+                  onChange={(on, record) =>
+                    save(
+                      {
+                        groupChecks: toggle<GroupCheck>(r.groupChecks ?? [], check, on),
+                        groupCheckLog: withRecord(r.groupCheckLog, check, on ? record : undefined),
+                      },
+                      true,
+                    )
+                  }
+                />
               )
             })}
           </div>
@@ -243,14 +257,14 @@ export function NegotiationWorkspace({ reservationId, onClose, onConfirm, onEmai
             </Button>
           )}
           {(r.status === 'pending' || r.status === 'in_progress') &&
-            (blocks.all ? (
+            (blocks.ready ? (
               <Button onClick={() => onConfirm(r)}>
                 <BadgeCheck aria-hidden="true" />
                 {t.finalComplete}
               </Button>
             ) : (
               <p className="flex items-center justify-center rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground sm:order-first sm:mr-auto">
-                {t.allBlocksHint} ({blocks.secured}/{blocks.total})
+                {blocks.all ? t.evidenceBlocksHint : `${t.allBlocksHint} (${blocks.secured}/${blocks.total})`}
               </p>
             ))}
         </div>
@@ -523,24 +537,23 @@ function StayCard({
             {NEGOTIATION_STEPS.map((step, i) => {
               const checked = negotiation.steps.includes(step)
               return (
-                <Label
+                <CheckItem
                   key={step}
-                  className={cn(
-                    'cursor-pointer rounded-lg border px-3 py-2 text-xs font-normal transition-colors',
-                    checked ? 'border-primary/30 bg-secondary' : 'hover:bg-muted/60',
-                  )}
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(on) =>
-                      onPatch({ steps: toggle<NegotiationStep>(negotiation.steps, step, Boolean(on)) }, true)
-                    }
-                  />
-                  <span className="font-mono text-[11px] text-muted-foreground">{i + 1}</span>
-                  <span className={cn(checked && 'text-muted-foreground line-through')}>
-                    {NEGOTIATION_STEP_LABELS[step][lang]}
-                  </span>
-                </Label>
+                  index={i + 1}
+                  label={NEGOTIATION_STEP_LABELS[step][lang]}
+                  checked={checked}
+                  record={negotiation.checks?.[step]}
+                  evidenceHint={EVIDENCE_STEP_HINTS[step]?.[lang]}
+                  onChange={(on, record) =>
+                    onPatch(
+                      {
+                        steps: toggle<NegotiationStep>(negotiation.steps, step, on),
+                        checks: withRecord(negotiation.checks, step, on ? record : undefined),
+                      },
+                      true,
+                    )
+                  }
+                />
               )
             })}
           </fieldset>

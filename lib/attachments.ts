@@ -5,7 +5,7 @@ import type { AttachedFile } from '@/lib/types'
 export const ATTACHMENT_BUCKET = 'attachments'
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
-export type AttachmentFolder = 'rooming' | 'voucher'
+export type AttachmentFolder = 'rooming' | 'voucher' | 'evidence'
 
 const MIME_BY_EXT: Record<string, string> = {
   xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -20,6 +20,8 @@ const MIME_BY_EXT: Record<string, string> = {
 export const ATTACHMENT_EXTENSIONS: Record<AttachmentFolder, string[]> = {
   rooming: ['xlsx', 'xls', 'pdf'],
   voucher: ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
+  // Screenshots of hotel / agency emails that prove a checklist step was really done.
+  evidence: ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
 }
 
 export const fileExtension = (name: string) => (name.includes('.') ? name.split('.').pop()!.toLowerCase() : '')

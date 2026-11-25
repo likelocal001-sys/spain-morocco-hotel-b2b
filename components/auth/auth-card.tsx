@@ -19,7 +19,7 @@ export function AuthCard({
           </div>
           <div className="leading-tight">
             <p className="font-serif text-xl font-bold tracking-tight">
-              SP-Morocco <span className="text-brand">Hotel Desk</span>
+              SPAIN <span className="text-brand">HOTEL DESK</span>
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">스페인 호텔 예약 대행 B2B · Portal B2B</p>
           </div>

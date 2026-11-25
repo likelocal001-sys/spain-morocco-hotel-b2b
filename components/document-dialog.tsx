@@ -27,7 +27,7 @@ export function DocHeader({ title, subtitle }: { title: string; subtitle: string
   return (
     <div className="flex items-start justify-between gap-4 border-b-2 border-primary pb-4">
       <div>
-        <p className="font-mono text-xs font-bold tracking-widest text-primary">SP-MOROCCO HOTEL DESK</p>
+        <p className="font-mono text-xs font-bold tracking-widest text-primary">SPAIN HOTEL DESK</p>
         <h2 className="mt-1 text-xl font-bold">{title}</h2>
         <p className="text-xs text-muted-foreground">{subtitle}</p>
       </div>

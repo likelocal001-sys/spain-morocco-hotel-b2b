@@ -91,7 +91,7 @@ function buildSpanishEmail(r: Reservation, group: HotelGroup) {
     'Quedamos a la espera de su respuesta.',
     '',
     'Atentamente,',
-    'SP-Morocco Hotel Desk',
+    'SPAIN HOTEL DESK',
     'Operaciones DMC Marruecos – España',
   ].join('\n')
 

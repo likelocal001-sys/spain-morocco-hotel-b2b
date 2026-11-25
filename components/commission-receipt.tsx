@@ -93,7 +93,7 @@ export function ReceiptDialog({
         <div className="print-area rounded-lg border bg-card p-5">
           <div className="flex items-start justify-between gap-4 border-b-2 border-primary pb-4">
             <div>
-              <p className="font-mono text-xs font-bold tracking-widest text-primary">SP-MOROCCO HOTEL DESK</p>
+              <p className="font-mono text-xs font-bold tracking-widest text-primary">SPAIN HOTEL DESK</p>
               <h2 className="mt-1 text-xl font-bold">{ko.receiptTitle}</h2>
               <p className="text-sm font-medium text-muted-foreground">{es.receiptTitle}</p>
             </div>
@@ -138,7 +138,7 @@ export function ReceiptDialog({
           <div className="mt-6 flex justify-end">
             <div className="flex flex-col items-center gap-1 rounded-md border-2 border-primary/60 px-4 py-2 text-primary">
               <span className="font-mono text-[11px] font-bold tracking-widest">PAID</span>
-              <span className="text-xs font-semibold">SP-Morocco Hotel Desk</span>
+              <span className="text-xs font-semibold">SPAIN HOTEL DESK</span>
             </div>
           </div>
         </div>

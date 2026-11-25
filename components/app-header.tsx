@@ -60,7 +60,7 @@ export function AppHeader() {
           </div>
           <div className="min-w-0 leading-tight">
             <p className="truncate font-serif text-lg font-bold tracking-tight">
-              SP-Morocco <span className="text-brand">Hotel Desk</span>
+              SPAIN <span className="text-brand">HOTEL DESK</span>
             </p>
             <p className="hidden truncate text-xs text-muted-foreground sm:block">{t.appTagline}</p>
           </div>

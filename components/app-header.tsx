@@ -4,6 +4,7 @@ import { LogOut } from 'lucide-react'
 import { useApp } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import type { Lang } from '@/lib/types'
+import { BrandLogo } from '@/components/brand-logo'
 
 function LangSwitch({
   label,
@@ -52,13 +53,8 @@ export function AppHeader() {
     <header className="sticky top-0 z-40 border-b border-foreground/15 bg-background/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 md:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          <div
-            aria-hidden="true"
-            className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground"
-          >
-            SM
-          </div>
-          <div className="min-w-0 leading-tight">
+          <BrandLogo className="h-8" />
+          <div className="hidden min-w-0 border-l border-foreground/15 pl-3 leading-tight sm:block">
             <p className="truncate font-serif text-lg font-bold tracking-tight">
               SPAIN <span className="text-brand">HOTEL DESK</span>
             </p>

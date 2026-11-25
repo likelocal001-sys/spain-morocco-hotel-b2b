@@ -1,3 +1,5 @@
+import { BrandLogo } from '@/components/brand-logo'
+
 export function AuthCard({
   title,
   subtitle,
@@ -11,13 +13,8 @@ export function AuthCard({
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="flex w-full max-w-sm flex-col gap-8">
         <div className="flex items-center gap-3 border-b border-foreground/15 pb-4">
-          <div
-            aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary font-mono text-sm font-bold text-primary-foreground"
-          >
-            SM
-          </div>
-          <div className="leading-tight">
+          <BrandLogo className="h-9" />
+          <div className="border-l border-foreground/15 pl-3 leading-tight">
             <p className="font-serif text-xl font-bold tracking-tight">
               SPAIN <span className="text-brand">HOTEL DESK</span>
             </p>
